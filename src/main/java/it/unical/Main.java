@@ -15,12 +15,9 @@ public class Main {
         }
 
         // Avvia il gioco nell'Event Dispatch Thread
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                GameController gameController = new GameController();
-                gameController.initGame();
-            }
+        SwingUtilities.invokeLater(() -> {
+            GameController gameController = new GameController();
+            gameController.initGame();
         });
     }
 }

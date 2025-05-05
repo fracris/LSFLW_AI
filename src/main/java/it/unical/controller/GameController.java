@@ -16,7 +16,7 @@ public class GameController {
     private GameFrame gameFrame;
     private InputController inputController;
     private Timer gameTimer;
-    private final int UPDATE_RATE = 1000; // Milliseconds (1 secondo)
+    private final int UPDATE_RATE = 10; // Milliseconds (1 secondo)
 
     public GameController() {
         // Crea lo stato di gioco
@@ -26,12 +26,7 @@ public class GameController {
         inputController = new InputController(this);
 
         // Inizializza il timer di gioco
-        gameTimer = new Timer(UPDATE_RATE, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                update();
-            }
-        });
+        gameTimer = new Timer(UPDATE_RATE, e -> update());
     }
 
     public GameFrame getGameFrame() {

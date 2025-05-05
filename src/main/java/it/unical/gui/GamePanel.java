@@ -57,7 +57,7 @@ public class GamePanel extends JPanel {
         g2d.scale(scale, scale);
 
         // Disegna lo sfondo dello spazio (stelle casuali)
-        drawBackground(g2d);
+        //drawBackground(g2d);
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);
@@ -187,5 +187,25 @@ public class GamePanel extends JPanel {
             }
         }
         return null;
+    }
+
+    public void panMap(int deltaX, int deltaY) {
+        viewPosition.translate(deltaX, deltaY);
+        repaint();
+    }
+
+    public void zoomMap(double v, Point mousePosition) {
+        Point mapMousePointBeforeZoom = screenToMap(mousePosition);
+
+        scale *= v;
+        scale = Math.max(0.1, Math.min(scale, 5.0)); // Limita la scala tra 0.1x e 5x
+
+        Point mapMousePointAfterZoom = screenToMap(mousePosition);
+        viewPosition.translate(
+                (int) ((mapMousePointAfterZoom.x-mapMousePointBeforeZoom.x) * scale),
+                (int) ((mapMousePointAfterZoom.y-mapMousePointBeforeZoom.y) * scale)
+        );
+
+        repaint();
     }
 }

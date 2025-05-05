@@ -14,6 +14,7 @@ public class GameFrame extends JFrame {
     public GameFrame(String title, GameController gameController) {
         super(title);
         this.gameController = gameController;
+        gameController.setGameFrame(this);
 
         // Configurazione base della finestra
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -34,6 +35,7 @@ public class GameFrame extends JFrame {
         // Imposta gamePanel come listener delle azioni dell'utente
         gamePanel.addMouseListener(gameController.getInputController());
         gamePanel.addMouseMotionListener(gameController.getInputController());
+        gamePanel.addMouseWheelListener(gameController.getInputController());
 
         // Centro la finestra sullo schermo
         setLocationRelativeTo(null);
