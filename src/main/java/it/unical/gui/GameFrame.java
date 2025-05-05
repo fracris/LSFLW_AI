@@ -1,7 +1,6 @@
 package it.unical.gui;
 
 import it.unical.controller.GameController;
-import it.unical.controller.InputController;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,56 +9,45 @@ public class GameFrame extends JFrame {
     private GamePanel gamePanel;
     private StatusPanel statusPanel;
     private ControlPanel controlPanel;
+    private GameController gameController;
 
-    public GameFrame(GameController controller) {
-        super("Little Stars for Little Wars");
+    public GameFrame(String title, GameController gameController) {
+        super(title);
+        this.gameController = gameController;
+
+        // Configurazione base della finestra
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1024, 768);
+        setMinimumSize(new Dimension(800, 600));
         setLayout(new BorderLayout());
 
-        // Inizializza i pannelli
-        gamePanel = new GamePanel(controller);
-        statusPanel = new StatusPanel(controller);
-        controlPanel = new ControlPanel(controller);
+        // Crea i pannelli principali
+        gamePanel = new GamePanel(gameController);
+        statusPanel = new StatusPanel(gameController);
+        controlPanel = new ControlPanel(gameController);
 
-        // Aggiunge i pannelli al frame
+        // Aggiunge i pannelli alla finestra
         add(gamePanel, BorderLayout.CENTER);
-        add(statusPanel, BorderLayout.NORTH);
+        add(statusPanel, BorderLayout.EAST);
         add(controlPanel, BorderLayout.SOUTH);
 
-        // Inizializza gli ascoltatori
-        addKeyListener(new InputController(controller));
+        // Imposta gamePanel come listener delle azioni dell'utente
+        gamePanel.addMouseListener(gameController.getInputController());
+        gamePanel.addMouseMotionListener(gameController.getInputController());
 
-        setVisible(true);
+        // Centro la finestra sullo schermo
+        setLocationRelativeTo(null);
     }
 
-    public GamePanel getGamePanel() {
-        return gamePanel;
-    }
-
-    public void setGamePanel(GamePanel gamePanel) {
-        this.gamePanel = gamePanel;
-    }
-
-    public ControlPanel getControlPanel() {
-        return controlPanel;
-    }
-
-    public void setControlPanel(ControlPanel controlPanel) {
-        this.controlPanel = controlPanel;
-    }
-
-    public StatusPanel getStatusPanel() {
-        return statusPanel;
-    }
-
-    public void setStatusPanel(StatusPanel statusPanel) {
-        this.statusPanel = statusPanel;
-    }
-
-    public void update() {
+    // Metodi per aggiornare l'interfaccia
+    public void updateUI() {
         gamePanel.repaint();
-        statusPanel.update();
-        controlPanel.update();
+        statusPanel.updateStatus();
+        controlPanel.updateControls();
     }
+
+    // Getters
+    public GamePanel getGamePanel() { return gamePanel; }
+    public StatusPanel getStatusPanel() { return statusPanel; }
+    public ControlPanel getControlPanel() { return controlPanel; }
 }

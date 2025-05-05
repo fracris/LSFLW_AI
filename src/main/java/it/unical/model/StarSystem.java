@@ -1,69 +1,81 @@
 package it.unical.model;
 
-import javax.swing.text.Position;
+import java.awt.Point;
+import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
 
 public class StarSystem {
     private int id;
     private String name;
-    private Position position;
+    private Point position;
     private int ships;
     private Player owner;
+    private int productionRate;
     private List<StarSystem> connectedSystems;
+    private Color color;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
+    // Costruttore
+    public StarSystem(int id, String name, Point position, int productionRate) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
         this.name = name;
-    }
-
-    public Position getPosition() {
-        return position;
-    }
-
-    public void setPosition(Position position) {
         this.position = position;
+        this.ships = 0;
+        this.owner = null;
+        this.productionRate = productionRate;
+        this.connectedSystems = new ArrayList<>();
+        this.color = Color.GRAY; // Sistema neutrale
     }
 
-    public int getShips() {
-        return ships;
+    // Metodi per connettere i sistemi stellari (creazione del grafo)
+    public void connectTo(StarSystem other) {
+        if (!connectedSystems.contains(other)) {
+            connectedSystems.add(other);
+            other.connectTo(this);
+        }
     }
 
-    public void setShips(int ships) {
-        this.ships = ships;
+    // Metodi per la gestione delle flotte e delle navi
+    public void addShips(int amount) {
+        ships += amount;
     }
 
-    public Player getOwner() {
-        return owner;
+    public boolean removeShips(int amount) {
+        if (ships >= amount) {
+            ships -= amount;
+            return true;
+        }
+        return false;
     }
 
-    public void setOwner(Player owner) {
-        this.owner = owner;
+    // Metodo per la produzione di navi per turno
+    public void produceShips() {
+        if (owner != null) {
+            ships += productionRate;
+        }
     }
 
-    public List<StarSystem> getConnectedSystems() {
-        return connectedSystems;
+    // Metodo per cambiare proprietario
+    public void setOwner(Player newOwner) {
+        this.owner = newOwner;
+        if (newOwner != null) {
+            this.color = newOwner.getColor();
+        } else {
+            this.color = Color.GRAY;
+        }
     }
 
-    public void setConnectedSystems(List<StarSystem> connectedSystems) {
-        this.connectedSystems = connectedSystems;
+    // Getters e setters
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public Point getPosition() { return position; }
+    public int getShips() { return ships; }
+    public Player getOwner() { return owner; }
+    public List<StarSystem> getConnectedSystems() { return connectedSystems; }
+    public Color getColor() { return color; }
+    public int getProductionRate() { return productionRate; }
+
+    public void setShips(int i) {
+        ships = i;
     }
-
-    // Metodi per gestire la connessione ad altri sistemi
-    public void connectTo(StarSystem other) {  }
-
-    // Metodi per gestire le flotte e le battaglie
-    public void addShips(int amount) {  }
-    public void removeShips(int amount) {  }
-    public boolean battle(Fleet incomingFleet) { return false; }
 }

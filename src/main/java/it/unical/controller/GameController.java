@@ -1,159 +1,98 @@
 package it.unical.controller;
 
-
-import it.unical.gui.ControlPanel;
 import it.unical.gui.GameFrame;
+import it.unical.gui.GamePanel;
 import it.unical.model.Fleet;
 import it.unical.model.GameState;
 import it.unical.model.StarSystem;
 
-import java.util.List;
-import java.util.Random;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.Timer;
 
 public class GameController {
-    private GameState state;
-    private GameFrame view;
-    private StarSystem selectedSystem;
-    private StarSystem targetSystem;
+    private GameState gameState;
+    private GameFrame gameFrame;
+    private InputController inputController;
+    private Timer gameTimer;
+    private final int UPDATE_RATE = 1000; // Milliseconds (1 secondo)
 
     public GameController() {
-        // Inizializza lo stato del gioco
-        state = new GameState();
-        state.initialize();
+        // Crea lo stato di gioco
+        gameState = new GameState(new Dimension(1600, 900));
 
-        // Inizializza la view
-        view = new GameFrame(this);
-    }
+        // Crea il controller di input
+        inputController = new InputController(this);
 
-    public void startGame() {
-        // Inizia il gioco
-        gameLoop();
-    }
-
-    private void gameLoop() {
-        // Per ora, il loop di gioco è semplice, verrà espanso in futuro
-        // con l'integrazione di EmbASP e DLV2
-        while (!state.isGameOver()) {
-            // Aggiorna la view
-            view.update();
-
-            // Se l'attuale giocatore è l'IA
-            if (state.getCurrentPlayer().isAI()) {
-                // In futuro, qui verrà chiamato EmbASP
-                // Per ora, eseguiamo solo una mossa casuale
-                makeRandomAIMove();
+        // Inizializza il timer di gioco
+        gameTimer = new Timer(UPDATE_RATE, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                update();
             }
+        });
+    }
 
-            // Attendi l'input del giocatore umano o passa al prossimo turno
-            // per l'IA
+    public GameFrame getGameFrame() {
+        return gameFrame;
+    }
+
+    public void setGameFrame(GameFrame gameFrame) {
+        this.gameFrame = gameFrame;
+    }
+
+    // Inizializza e avvia il gioco
+    public void initGame() {
+        // Inizializza lo stato di gioco
+        gameState.initGame(20, 2, true); // 20 sistemi, 2 giocatori, con IA
+
+        // Crea e mostra la finestra di gioco
+        gameFrame = new GameFrame("Little Stars for Little Wars", this);
+        gameFrame.setVisible(true);
+
+        // Avvia il timer di gioco
+        gameTimer.start();
+    }
+
+    // Aggiorna lo stato del gioco (chiamato ogni tick del timer)
+    private void update() {
+        // Aggiorna le flotte
+        gameState.getGameMap().updateFleets(1.0); // 1.0 = 1 secondo
+
+        // Aggiorna l'interfaccia grafica
+        if (gameFrame != null) {
+            gameFrame.updateUI();
+        }
+
+        // Controlla se è il turno dell'IA e falla giocare automaticamente
+        if (gameState.getCurrentPlayer().isAI()) {
+            // Note: In realtà qui chiameremmo EmbASP/DLV2
+            // Ma per ora semplicemente passiamo al prossimo turno dopo un breve ritardo
+            nextTurn();
         }
     }
 
-    public void handleMapClick(int x, int y) {
-        // Trova il sistema cliccato
-        StarSystem clickedSystem = state.getMap().getSystemAt(x, y);
-
-        if (clickedSystem != null) {
-            // Se nessun sistema è selezionato, questo diventa il sistema selezionato
-            if (selectedSystem == null) {
-                if (clickedSystem.getOwner() == state.getCurrentPlayer()) {
-                    selectedSystem = clickedSystem;
-                }
-            }
-            // Altrimenti, se un sistema è già selezionato
-            else {
-                // Se clicchiamo su un sistema diverso, diventa il target
-                if (clickedSystem != selectedSystem) {
-                    targetSystem = clickedSystem;
-
-                    // Invia una flotta
-                    ControlPanel controlPanel = view.getControlPanel();
-                    int percentage = controlPanel.getShipsPercentage();
-                    sendFleet(selectedSystem, targetSystem, percentage);
-
-                    // Resetta la selezione
-                    selectedSystem = null;
-                    targetSystem = null;
-                }
-                // Se clicchiamo sullo stesso sistema, deseleziona
-                else {
-                    selectedSystem = null;
-                }
-            }
-
-            // Aggiorna la view
-            view.update();
-        }
+    // Invia una flotta da un sistema a un altro
+    public Fleet sendFleet(StarSystem source, StarSystem target, int ships) {
+        return gameState.sendFleet(source, target, ships);
     }
 
-    public void endTurn() {
-        // Passa al prossimo turno
-        state.nextTurn();
-
-        // Resetta la selezione
-        selectedSystem = null;
-        targetSystem = null;
-
-        // Aggiorna la view
-        view.update();
+    // Passa al prossimo turno
+    public void nextTurn() {
+        gameState.nextTurn();
     }
 
-    private void sendFleet(StarSystem source, StarSystem target, int percentage) {
-        // Calcola il numero di navi da inviare
-        int totalShips = source.getShips();
-        int shipsToSend = totalShips * percentage / 100;
-
-        if (shipsToSend > 0) {
-            // Rimuovi le navi dal sistema di origine
-            source.removeShips(shipsToSend);
-
-            // Crea una nuova flotta
-            Fleet newFleet = new Fleet(shipsToSend, state.getCurrentPlayer(), source, target);
-
-            // Aggiungi la flotta allo stato di gioco
-            state.addFleet(newFleet);
-        }
-    }
-
-    private void makeRandomAIMove() {
-        // Implementazione semplice per l'IA in attesa di EmbASP
-        // Seleziona casualmente un sistema posseduto dall'IA
-        List<StarSystem> aiSystems = state.getSystemsOwnedBy(state.getCurrentPlayer());
-
-        if (!aiSystems.isEmpty()) {
-            Random random = new Random();
-            StarSystem source = aiSystems.get(random.nextInt(aiSystems.size()));
-
-            // Trova tutti i sistemi adiacenti
-            List<StarSystem> neighbors = state.getMap().getNeighbors(source);
-
-            if (!neighbors.isEmpty()) {
-                StarSystem target = neighbors.get(random.nextInt(neighbors.size()));
-
-                // Invia una flotta con il 50% delle navi
-                sendFleet(source, target, 50);
-            }
-        }
-
-        // Termina il turno dell'IA
-        endTurn();
-    }
-
-    // Getter
+    // Getters
     public GameState getGameState() {
-        return state;
+        return gameState;
     }
 
-    public StarSystem getSelectedSystem() {
-        return selectedSystem;
+    public GamePanel getGamePanel() {
+        return gameFrame.getGamePanel();
     }
 
-    public void zoom(float v) {
-    }
-
-    public void deselectSystem() {
-    }
-
-    public void panView(int i, int i1) {
+    public InputController getInputController() {
+        return inputController;
     }
 }

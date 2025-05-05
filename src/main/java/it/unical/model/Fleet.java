@@ -1,70 +1,58 @@
 package it.unical.model;
 
+import java.awt.Color;
+
 public class Fleet {
     private int id;
-    private int ships;
     private Player owner;
+    private int ships;
     private StarSystem source;
     private StarSystem destination;
-    private int turnsToArrival;
+    private double progress; // 0.0 a 1.0, dove 1.0 indica l'arrivo
+    private double speed;
 
-    public Fleet(int shipsToSend, Player currentPlayer, StarSystem source, StarSystem target) {
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
+    public Fleet(int id, Player owner, int ships, StarSystem source, StarSystem destination, double speed) {
         this.id = id;
-    }
-
-    public int getShips() {
-        return ships;
-    }
-
-    public void setShips(int ships) {
-        this.ships = ships;
-    }
-
-    public Player getOwner() {
-        return owner;
-    }
-
-    public void setOwner(Player owner) {
         this.owner = owner;
-    }
-
-    public StarSystem getSource() {
-        return source;
-    }
-
-    public void setSource(StarSystem source) {
+        this.ships = ships;
         this.source = source;
-    }
-
-    public StarSystem getDestination() {
-        return destination;
-    }
-
-    public void setDestination(StarSystem destination) {
         this.destination = destination;
+        this.progress = 0.0;
+        this.speed = speed;
     }
 
-    public int getTurnsToArrival() {
-        return turnsToArrival;
+    // Metodo per aggiornare la posizione della flotta
+    public void update(double deltaTime) {
+        progress += speed * deltaTime;
+        if (progress >= 1.0) {
+            progress = 1.0;
+        }
     }
 
-    public void setTurnsToArrival(int turnsToArrival) {
-        this.turnsToArrival = turnsToArrival;
-    }
-
-    // Metodi per gestire il movimento
-    public void move() {
-        this.turnsToArrival--;
-    }
-
+    // Metodo per verificare se la flotta è arrivata
     public boolean hasArrived() {
-        return turnsToArrival <= 0;
+        return progress >= 1.0;
     }
+
+    // Calcola la posizione attuale della flotta (interpolazione)
+    public java.awt.Point getCurrentPosition() {
+        int x1 = source.getPosition().x;
+        int y1 = source.getPosition().y;
+        int x2 = destination.getPosition().x;
+        int y2 = destination.getPosition().y;
+
+        int x = (int) (x1 + (x2 - x1) * progress);
+        int y = (int) (y1 + (y2 - y1) * progress);
+
+        return new java.awt.Point(x, y);
+    }
+
+    // Getters e setters
+    public int getId() { return id; }
+    public Player getOwner() { return owner; }
+    public Color getColor() { return owner.getColor(); }
+    public int getShips() { return ships; }
+    public StarSystem getSource() { return source; }
+    public StarSystem getDestination() { return destination; }
+    public double getProgress() { return progress; }
 }

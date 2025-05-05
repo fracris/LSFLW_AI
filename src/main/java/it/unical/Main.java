@@ -1,16 +1,26 @@
 package it.unical;
 
-
 import it.unical.controller.GameController;
-import it.unical.gui.GameFrame;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 public class Main {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            GameController gameWindow = new GameController();
-            gameWindow.startGame();
+        // Imposta il look and feel del sistema operativo
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Avvia il gioco nell'Event Dispatch Thread
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                GameController gameController = new GameController();
+                gameController.initGame();
+            }
         });
     }
 }

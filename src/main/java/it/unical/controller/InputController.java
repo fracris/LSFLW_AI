@@ -1,97 +1,71 @@
 package it.unical.controller;
 
-import java.awt.event.*;
+import it.unical.controller.GameController;
+import it.unical.gui.GamePanel;
+import it.unical.model.Player;
+import it.unical.model.StarSystem;
 
-public class InputController extends KeyAdapter implements MouseListener, MouseMotionListener {
-    private GameController controller;
-    private int lastMouseX, lastMouseY;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-    public InputController(GameController controller) {
-        this.controller = controller;
-    }
+public class InputController extends MouseAdapter {
+    private GameController gameController;
+    private Point lastMousePosition;
 
-    @Override
-    public void keyPressed(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_ESCAPE:
-                // Deseleziona il sistema corrente
-                controller.deselectSystem();
-                break;
-            case KeyEvent.VK_SPACE:
-                // Termina il turno
-                controller.endTurn();
-                break;
-            case KeyEvent.VK_LEFT:
-                // Sposta la visuale a sinistra
-                controller.panView(-10, 0);
-                break;
-            case KeyEvent.VK_RIGHT:
-                // Sposta la visuale a destra
-                controller.panView(10, 0);
-                break;
-            case KeyEvent.VK_UP:
-                // Sposta la visuale in alto
-                controller.panView(0, -10);
-                break;
-            case KeyEvent.VK_DOWN:
-                // Sposta la visuale in basso
-                controller.panView(0, 10);
-                break;
-            case KeyEvent.VK_PLUS:
-            case KeyEvent.VK_EQUALS:
-                // Aumenta lo zoom
-                controller.zoom(1.1f);
-                break;
-            case KeyEvent.VK_MINUS:
-                // Diminuisce lo zoom
-                controller.zoom(0.9f);
-                break;
-        }
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        // Gestito dal GamePanel
+    public InputController(GameController gameController) {
+        this.gameController = gameController;
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-        lastMouseX = e.getX();
-        lastMouseY = e.getY();
-    }
+        lastMousePosition = e.getPoint();
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        // Implementazione per il rilascio del mouse
-    }
+        // Controlla se è il turno del giocatore umano
+        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
+        if (currentPlayer.isAI()) {
+            return; // Non fare nulla durante il turno dell'IA
+        }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        // Non necessario
-    }
+        // Converti le coordinate del mouse in coordinate della mappa
+        GamePanel gamePanel = gameController.getGamePanel();
+        Point mapPoint = gamePanel.screenToMap(e.getPoint());
 
-    @Override
-    public void mouseExited(MouseEvent e) {
-        // Non necessario
+        // Trova il sistema sotto il cursore (se c'è)
+        StarSystem clickedSystem = gamePanel.findSystemAt(mapPoint);
+
+        if (clickedSystem != null) {
+            StarSystem selectedSystem = gamePanel.getSelectedSystem();
+
+            if (selectedSystem == null) {
+                // Nessun sistema selezionato, seleziona questo
+                gamePanel.setSelectedSystem(clickedSystem);
+            } else if (selectedSystem == clickedSystem) {
+                // Cliccato lo stesso sistema, deseleziona
+                gamePanel.setSelectedSystem(null);
+            } else if (selectedSystem.getConnectedSystems().contains(clickedSystem)) {
+                // Cliccato un sistema connesso, imposta come target
+                gamePanel.setTargetSystem(clickedSystem);
+            } else {
+                // Cliccato un sistema non connesso, cambia selezione
+                gamePanel.setSelectedSystem(clickedSystem);
+            }
+
+            // Aggiorna i controlli
+            gameController.getGamePanel().repaint();
+            gameController.getGameFrame().getControlPanel().updateControls();
+            gameController.getGameFrame().getStatusPanel().updateSelectedSystemInfo();
+        }
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        // Calcola lo spostamento
-        int dx = e.getX() - lastMouseX;
-        int dy = e.getY() - lastMouseY;
-
-        // Sposta la visuale
-        controller.panView(dx, dy);
-
-        // Aggiorna le coordinate
-        lastMouseX = e.getX();
-        lastMouseY = e.getY();
+        // Implementa il trascinamento della mappa (panning)
+        // TODO: Implementare
     }
 
     @Override
-    public void mouseMoved(MouseEvent e) {
-        // Implementazione per il movimento del mouse
+    public void mouseReleased(MouseEvent e) {
+        lastMousePosition = null;
     }
 }
-

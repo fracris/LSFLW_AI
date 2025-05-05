@@ -1,51 +1,47 @@
 package it.unical.gui;
 
 import it.unical.controller.GameController;
+import it.unical.model.Fleet;
+import it.unical.model.GameMap;
+import it.unical.model.StarSystem;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
+import java.awt.geom.Line2D;
 
 public class GamePanel extends JPanel {
-    private GameController controller;
-    private BufferedImage background;
-    private int offsetX, offsetY;
-    private float zoomLevel;
+    private GameController gameController;
+    private StarSystemView[] systemViews;
+    private FleetView[] fleetViews;
 
-    public GamePanel(GameController controller) {
-        this.controller = controller;
-        setPreferredSize(new Dimension(800, 600));
+    // Variabili per gestire lo zoom e il pan
+    private double scale = 1.0;
+    private Point viewPosition = new Point(0, 0);
+
+    // Variabili per la selezione
+    private StarSystem selectedSystem;
+    private StarSystem targetSystem;
+
+    public GamePanel(GameController gameController) {
+        this.gameController = gameController;
         setBackground(Color.BLACK);
 
-        // Inizializza il background e lo zoom
-        try {
-            background = ImageIO.read(getClass().getResourceAsStream("/images/space_background.png"));
-        } catch (Exception e) {
-            e.printStackTrace();
+        // Inizializza le viste dei sistemi e delle flotte
+        updateSystemViews();
+    }
+
+    // Aggiorna le viste dei sistemi stellari
+    public void updateSystemViews() {
+        GameMap gameMap = gameController.getGameState().getGameMap();
+
+        // Crea le viste per i sistemi
+        systemViews = new StarSystemView[gameMap.getSystems().size()];
+        for (int i = 0; i < gameMap.getSystems().size(); i++) {
+            StarSystem system = gameMap.getSystems().get(i);
+            systemViews[i] = new StarSystemView(system);
         }
 
-        zoomLevel = 1.0f;
-
-        // Gestione degli eventi del mouse
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                handleClick(e.getX(), e.getY());
-            }
-        });
-
-        // Gestione dello scrolling per la mappa
-        addMouseWheelListener(e -> {
-            if (e.getWheelRotation() < 0) {
-                zoomLevel *= 1.1f;
-            } else {
-                zoomLevel *= 0.9f;
-            }
-            repaint();
-        });
+        // Le viste delle flotte sono dinamiche e si aggiornano nel paint
     }
 
     @Override
@@ -53,36 +49,143 @@ public class GamePanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
-        // Applica trasformazioni per zoom e panning
-        g2d.translate(offsetX, offsetY);
-        g2d.scale(zoomLevel, zoomLevel);
+        // Abilita l'anti-aliasing per una grafica più liscia
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Disegna lo sfondo
+        // Applica zoom e pan
+        g2d.translate(viewPosition.x, viewPosition.y);
+        g2d.scale(scale, scale);
+
+        // Disegna lo sfondo dello spazio (stelle casuali)
         drawBackground(g2d);
 
-        // Disegna i sistemi e le connessioni
+        // Disegna le connessioni tra i sistemi
         drawConnections(g2d);
+
+        // Disegna i sistemi stellari
         drawSystems(g2d);
 
         // Disegna le flotte
         drawFleets(g2d);
 
-        // Disegna elementi UI sovrapposti
-        drawOverlayUI(g2d);
+        // Disegna la selezione attuale (se presente)
+        drawSelection(g2d);
     }
 
-    private void drawBackground(Graphics2D g2d) {  }
-    private void drawConnections(Graphics2D g2d) {  }
-    private void drawSystems(Graphics2D g2d) {  }
-    private void drawFleets(Graphics2D g2d) {  }
-    private void drawOverlayUI(Graphics2D g2d) {  }
+    // Disegna lo sfondo con stelle casuali
+    private void drawBackground(Graphics2D g2d) {
+        // Implementazione semplice: stelle casuali
+        g2d.setColor(Color.WHITE);
+        for (int i = 0; i < 200; i++) {
+            int x = (int) (Math.random() * getWidth() / scale);
+            int y = (int) (Math.random() * getHeight() / scale);
+            int size = (int) (Math.random() * 2) + 1;
+            g2d.fillOval(x, y, size, size);
+        }
+    }
 
-    private void handleClick(int x, int y) {
-        // Trasforma le coordinate in base a zoom e offset
-        int gameX = (int)((x - offsetX) / zoomLevel);
-        int gameY = (int)((y - offsetY) / zoomLevel);
+    // Disegna le connessioni tra i sistemi
+    private void drawConnections(Graphics2D g2d) {
+        GameMap gameMap = gameController.getGameState().getGameMap();
 
-        // Informa il controller del click
-        controller.handleMapClick(gameX, gameY);
+        g2d.setStroke(new BasicStroke(1.0f));
+        g2d.setColor(new Color(80, 80, 100));
+
+        for (StarSystem system : gameMap.getSystems()) {
+            Point p1 = system.getPosition();
+
+            for (StarSystem connected : system.getConnectedSystems()) {
+                Point p2 = connected.getPosition();
+
+                // Evita di disegnare due volte la stessa connessione
+                if (system.getId() < connected.getId()) {
+                    g2d.draw(new Line2D.Double(p1.x, p1.y, p2.x, p2.y));
+                }
+            }
+        }
+    }
+
+    // Disegna i sistemi stellari
+    private void drawSystems(Graphics2D g2d) {
+        for (StarSystemView systemView : systemViews) {
+            systemView.draw(g2d);
+        }
+    }
+
+    // Disegna le flotte
+    private void drawFleets(Graphics2D g2d) {
+        GameMap gameMap = gameController.getGameState().getGameMap();
+
+        for (Fleet fleet : gameMap.getFleets()) {
+            FleetView fleetView = new FleetView(fleet);
+            fleetView.draw(g2d);
+        }
+    }
+
+    // Disegna la selezione attuale e l'evidenziazione per l'invio delle flotte
+    private void drawSelection(Graphics2D g2d) {
+        if (selectedSystem != null) {
+            // Disegna un cerchio attorno al sistema selezionato
+            Point p = selectedSystem.getPosition();
+            g2d.setColor(Color.WHITE);
+            g2d.setStroke(new BasicStroke(2.0f));
+            g2d.drawOval(p.x - 25, p.y - 25, 50, 50);
+
+            // Evidenzia i sistemi raggiungibili
+            g2d.setColor(new Color(150, 150, 255, 100));
+            for (StarSystem connected : selectedSystem.getConnectedSystems()) {
+                Point p2 = connected.getPosition();
+                g2d.fillOval(p2.x - 22, p2.y - 22, 44, 44);
+            }
+        }
+
+        if (targetSystem != null && selectedSystem != null) {
+            // Disegna una linea dal sistema selezionato al sistema target
+            Point p1 = selectedSystem.getPosition();
+            Point p2 = targetSystem.getPosition();
+
+            g2d.setColor(Color.YELLOW);
+            g2d.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, new float[]{8}, 0));
+            g2d.draw(new Line2D.Double(p1.x, p1.y, p2.x, p2.y));
+        }
+    }
+
+    // Metodi per gestire selezione e target
+    public void setSelectedSystem(StarSystem system) {
+        this.selectedSystem = system;
+        this.targetSystem = null;
+        repaint();
+    }
+
+    public void setTargetSystem(StarSystem system) {
+        if (selectedSystem != null && selectedSystem.getConnectedSystems().contains(system)) {
+            this.targetSystem = system;
+            repaint();
+        }
+    }
+
+    public StarSystem getSelectedSystem() {
+        return selectedSystem;
+    }
+
+    public StarSystem getTargetSystem() {
+        return targetSystem;
+    }
+
+    // Converte le coordinate del mouse alle coordinate della mappa
+    public Point screenToMap(Point screenPoint) {
+        int mapX = (int) ((screenPoint.x - viewPosition.x) / scale);
+        int mapY = (int) ((screenPoint.y - viewPosition.y) / scale);
+        return new Point(mapX, mapY);
+    }
+
+    // Trova un sistema stellare alle coordinate date
+    public StarSystem findSystemAt(Point point) {
+        for (StarSystemView systemView : systemViews) {
+            if (systemView.contains(point)) {
+                return systemView.getSystem();
+            }
+        }
+        return null;
     }
 }

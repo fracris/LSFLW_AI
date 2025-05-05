@@ -1,6 +1,7 @@
 package it.unical.model;
 
-import java.awt.*;
+import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Player {
@@ -9,63 +10,63 @@ public class Player {
     private Color color;
     private boolean isAI;
     private List<StarSystem> ownedSystems;
-    private List<Fleet> ownedFleets;
+    private List<Fleet> fleets;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
+    public Player(int id, String name, Color color, boolean isAI) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
         this.name = name;
-    }
-
-    public Color getColor() {
-        return color;
-    }
-
-    public void setColor(Color color) {
         this.color = color;
+        this.isAI = isAI;
+        this.ownedSystems = new ArrayList<>();
+        this.fleets = new ArrayList<>();
     }
 
-    public boolean isAI() {
-        return isAI;
+    // Metodi per gestire i sistemi posseduti
+    public void addSystem(StarSystem system) {
+        if (!ownedSystems.contains(system)) {
+            ownedSystems.add(system);
+            system.setOwner(this);
+        }
     }
 
-    public void setAI(boolean AI) {
-        isAI = AI;
+    public void removeSystem(StarSystem system) {
+        ownedSystems.remove(system);
+        if (system.getOwner() == this) {
+            system.setOwner(null);
+        }
     }
 
-    public List<StarSystem> getOwnedSystems() {
-        return ownedSystems;
+    // Metodi per gestire le flotte
+    public void addFleet(Fleet fleet) {
+        fleets.add(fleet);
     }
 
-    public void setOwnedSystems(List<StarSystem> ownedSystems) {
-        this.ownedSystems = ownedSystems;
+    public void removeFleet(Fleet fleet) {
+        fleets.remove(fleet);
     }
 
-    public List<Fleet> getOwnedFleets() {
-        return ownedFleets;
+    // Calcola il totale delle navi del giocatore
+    public int getTotalShips() {
+        int totalShips = 0;
+
+        // Somma le navi in tutti i sistemi posseduti
+        for (StarSystem system : ownedSystems) {
+            totalShips += system.getShips();
+        }
+
+        // Somma le navi in tutte le flotte
+        for (Fleet fleet : fleets) {
+            totalShips += fleet.getShips();
+        }
+
+        return totalShips;
     }
 
-    public void setOwnedFleets(List<Fleet> ownedFleets) {
-        this.ownedFleets = ownedFleets;
-    }
-
-    // Metodi per gestire i possedimenti
-    public void addSystem(StarSystem system) {  }
-    public void removeSystem(StarSystem system) {  }
-    public void addFleet(Fleet fleet) {  }
-    public void removeFleet(Fleet fleet) {  }
-
-    // Statistiche
-    public int getTotalShips() { return 0;  }
-    public int getTotalSystems() { return 0; }
+    // Getters e setters
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public Color getColor() { return color; }
+    public boolean isAI() { return isAI; }
+    public List<StarSystem> getOwnedSystems() { return ownedSystems; }
+    public List<Fleet> getFleets() { return fleets; }
 }
