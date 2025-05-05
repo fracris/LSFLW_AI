@@ -57,7 +57,7 @@ public class GamePanel extends JPanel {
         g2d.scale(scale, scale);
 
         // Disegna lo sfondo dello spazio (stelle casuali)
-        drawBackground(g2d);
+        // drawBackground(g2d);
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);

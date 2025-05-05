@@ -59,68 +59,113 @@ public class ControlPanel extends JPanel implements ActionListener {
         add(statusLabel, BorderLayout.EAST);
     }
 
-    // Aggiorna lo stato dei controlli
-    public void updateControls() {
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-        boolean isHumanTurn = !currentPlayer.isAI();
+//    // Aggiorna lo stato dei controlli
+//    public void updateControls() {
+//        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
+//        boolean isHumanTurn = !currentPlayer.isAI();
+//
+//        // Disabilita i controlli se non è il turno del giocatore umano
+//        endTurnButton.setEnabled(isHumanTurn);
+//        shipsSpinner.setEnabled(isHumanTurn);
+//
+//        StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
+//        StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
+//
+//        // Abilita il pulsante "Invia Flotta" solo se:
+//        // 1. È il turno del giocatore umano
+//        // 2. È selezionato un sistema di proprietà del giocatore corrente
+//        // 3. È selezionato un sistema target valido
+//        boolean canSendFleet = isHumanTurn &&
+//                selectedSystem != null &&
+//                selectedSystem.getOwner() == currentPlayer &&
+//                targetSystem != null &&
+//                selectedSystem.getConnectedSystems().contains(targetSystem);
+//
+//        sendFleetButton.setEnabled(canSendFleet);
+//
+//        // Limita il numero massimo di navi che possono essere inviate
+//        if (selectedSystem != null) {
+//            int maxShips = selectedSystem.getShips();
+//            SpinnerNumberModel model = (SpinnerNumberModel) shipsSpinner.getModel();
+//            model.setMaximum(maxShips);
+//
+//            // Se il valore attuale è maggiore del massimo, aggiustalo
+//            if ((Integer) shipsSpinner.getValue() > maxShips) {
+//                shipsSpinner.setValue(maxShips);
+//            }
+//        }
+//
+//        // Aggiorna il messaggio di stato
+//        updateStatusMessage();
+//    }
 
-        // Disabilita i controlli se non è il turno del giocatore umano
-        endTurnButton.setEnabled(isHumanTurn);
-        shipsSpinner.setEnabled(isHumanTurn);
+    public void updateControls() {
+        // rimuovi queste righe:
+        // Player currentPlayer = gameController.getGameState().getCurrentPlayer();
+        // boolean isHumanTurn = !currentPlayer.isAI();
+        // endTurnButton.setEnabled(isHumanTurn);
+        // shipsSpinner.setEnabled(isHumanTurn);
+
+        // nascondi del tutto il Fine Turno
+        endTurnButton.setVisible(false);
 
         StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
-        StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
+        StarSystem targetSystem   = gameController.getGamePanel().getTargetSystem();
+        Player   human            = gameController.getGameState().getHumanPlayer();
 
-        // Abilita il pulsante "Invia Flotta" solo se:
-        // 1. È il turno del giocatore umano
-        // 2. È selezionato un sistema di proprietà del giocatore corrente
-        // 3. È selezionato un sistema target valido
-        boolean canSendFleet = isHumanTurn &&
+        // abilita solo se è un tuo sistema e il target è connesso
+        boolean canSendFleet =
                 selectedSystem != null &&
-                selectedSystem.getOwner() == currentPlayer &&
-                targetSystem != null &&
-                selectedSystem.getConnectedSystems().contains(targetSystem);
-
+                        selectedSystem.getOwner() == human &&
+                        targetSystem != null &&
+                        selectedSystem.getConnectedSystems().contains(targetSystem);
         sendFleetButton.setEnabled(canSendFleet);
 
-        // Limita il numero massimo di navi che possono essere inviate
+        // aggiorna il massimo delle navi come prima
         if (selectedSystem != null) {
             int maxShips = selectedSystem.getShips();
             SpinnerNumberModel model = (SpinnerNumberModel) shipsSpinner.getModel();
             model.setMaximum(maxShips);
-
-            // Se il valore attuale è maggiore del massimo, aggiustalo
             if ((Integer) shipsSpinner.getValue() > maxShips) {
                 shipsSpinner.setValue(maxShips);
             }
         }
 
-        // Aggiorna il messaggio di stato
-        updateStatusMessage();
-    }
-
-    // Aggiorna il messaggio di stato
-    private void updateStatusMessage() {
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-
-        if (currentPlayer.isAI()) {
-            statusLabel.setText("L'IA sta pensando...");
-            return;
-        }
-
-        StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
-        StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
-
+        // messaggio di stato
         if (selectedSystem == null) {
             statusLabel.setText("Seleziona un tuo sistema stellare");
-        } else if (selectedSystem.getOwner() != currentPlayer) {
-            statusLabel.setText("Questo non è un tuo sistema! Selezionane uno tuo");
+        } else if (selectedSystem.getOwner() != human) {
+            statusLabel.setText("Questo non è un tuo sistema!");
         } else if (targetSystem == null) {
-            statusLabel.setText("Seleziona un sistema target connesso");
+            statusLabel.setText("Seleziona un sistema target");
         } else {
-            statusLabel.setText("Pronto a inviare una flotta!");
+            statusLabel.setText("Pronto a inviare una flotta");
         }
     }
+
+
+    // Aggiorna il messaggio di stato
+//    private void updateStatusMessage() {
+//        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
+//
+//        if (currentPlayer.isAI()) {
+//            statusLabel.setText("L'IA sta pensando...");
+//            return;
+//        }
+//
+//        StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
+//        StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
+//
+//        if (selectedSystem == null) {
+//            statusLabel.setText("Seleziona un tuo sistema stellare");
+//        } else if (selectedSystem.getOwner() != currentPlayer) {
+//            statusLabel.setText("Questo non è un tuo sistema! Selezionane uno tuo");
+//        } else if (targetSystem == null) {
+//            statusLabel.setText("Seleziona un sistema target connesso");
+//        } else {
+//            statusLabel.setText("Pronto a inviare una flotta!");
+//        }
+//    }
 
     // Gestisce gli eventi dei pulsanti
     @Override
@@ -152,7 +197,6 @@ public class ControlPanel extends JPanel implements ActionListener {
 
     // Termina il turno corrente
     private void endTurn() {
-        gameController.nextTurn();
 
         // Reimposta la selezione
         gameController.getGamePanel().setSelectedSystem(null);

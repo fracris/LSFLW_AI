@@ -100,7 +100,6 @@ public class AIPlayer {
         }
 
         // Aggiungi il turno corrente
-        facts.append("current_turn(" + gameState.getCurrentTurn() + ").\n");
 
         return facts.toString();
     }
@@ -142,7 +141,7 @@ public class AIPlayer {
 
                 if (source != null && target != null) {
                     // Esegui l'invio della flotta
-                    gameState.sendFleet(source, target, ships);
+//                    gameState.sendFleet(source, target, ships);
                     System.out.println("IA invia flotta: " + ships + " navi da " + source.getName() + " a " + target.getName());
                 }
             } catch (Exception e) {

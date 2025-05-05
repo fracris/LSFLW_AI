@@ -14,6 +14,7 @@ public class GameFrame extends JFrame {
     public GameFrame(String title, GameController gameController) {
         super(title);
         this.gameController = gameController;
+        gameController.setGameFrame(this);
 
         // Configurazione base della finestra
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

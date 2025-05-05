@@ -116,37 +116,69 @@ public class GameMap {
         }
     }
 
+//    // Gestisce l'arrivo di una flotta a destinazione
+//    private void handleFleetArrival(Fleet fleet) {
+//        StarSystem destination = fleet.getDestination();
+//        Player fleetOwner = fleet.getOwner();
+//        int fleetShips = fleet.getShips();
+//
+//        if (destination.getOwner() == null || destination.getOwner() == fleetOwner) {
+//            // Sistema neutrale o amico: aggiungi le navi
+//            destination.addShips(fleetShips);
+//            if (destination.getOwner() == null) {
+//                destination.setOwner(fleetOwner);
+//            }
+//        } else {
+//            // Sistema nemico: battaglia
+//            int defenderShips = destination.getShips();
+//
+//            if (fleetShips > defenderShips) {
+//                // L'attaccante vince
+//                destination.setShips(fleetShips - defenderShips);
+//                destination.setOwner(fleetOwner);
+//            } else {
+//                // Il difensore vince (o pareggio)
+//                destination.setShips(defenderShips - fleetShips);
+//            }
+//        }
+//
+//        // Rimuovi la flotta dopo l'arrivo
+//        fleetOwner.removeFleet(fleet);
+//        fleets.remove(fleet);
+//    }
+
     // Gestisce l'arrivo di una flotta a destinazione
     private void handleFleetArrival(Fleet fleet) {
         StarSystem destination = fleet.getDestination();
-        Player fleetOwner = fleet.getOwner();
-        int fleetShips = fleet.getShips();
+        Player attacker       = fleet.getOwner();
+        Player defender       = destination.getOwner();
+        int fleetShips        = fleet.getShips();
 
-        if (destination.getOwner() == null || destination.getOwner() == fleetOwner) {
-            // Sistema neutrale o amico: aggiungi le navi
-            destination.addShips(fleetShips);
-            if (destination.getOwner() == null) {
-                destination.setOwner(fleetOwner);
+        if (defender == null || defender == attacker) {
+            // Sistema neutrale o amico
+            if (defender == null) {
+                attacker.addSystem(destination);
             }
+            destination.addShips(fleetShips);
         } else {
             // Sistema nemico: battaglia
-            int defenderShips = destination.getShips();
+            int defendingShips = destination.getShips();
 
-            if (fleetShips > defenderShips) {
-                // L'attaccante vince
-                destination.setShips(fleetShips - defenderShips);
-                destination.setOwner(fleetOwner);
+            if (fleetShips > defendingShips) {
+                // Conquista
+                defender.removeSystem(destination);
+                attacker.addSystem(destination);
+                destination.setShips(fleetShips - defendingShips);
             } else {
-                // Il difensore vince (o pareggio)
-                destination.setShips(defenderShips - fleetShips);
+                // Difensore vince o pareggio
+                destination.setShips(defendingShips - fleetShips);
             }
         }
 
         // Rimuovi la flotta dopo l'arrivo
-        fleetOwner.removeFleet(fleet);
+        attacker.removeFleet(fleet);
         fleets.remove(fleet);
     }
-
     // Getters
     public List<StarSystem> getSystems() { return systems; }
     public List<Fleet> getFleets() { return fleets; }

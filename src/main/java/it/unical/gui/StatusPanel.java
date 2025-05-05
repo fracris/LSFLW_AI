@@ -89,11 +89,6 @@ public class StatusPanel extends JPanel {
 
     // Aggiorna le informazioni di stato
     public void updateStatus() {
-        // Aggiorna le informazioni sul turno
-        turnLabel.setText("Turno: " + gameController.getGameState().getCurrentTurn());
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-        currentPlayerLabel.setText("Giocatore: " + currentPlayer.getName());
-        currentPlayerLabel.setForeground(currentPlayer.getColor());
 
         // Aggiorna le statistiche dei giocatori
         updatePlayerStats();

@@ -21,11 +21,6 @@ public class InputController extends MouseAdapter {
     public void mousePressed(MouseEvent e) {
         lastMousePosition = e.getPoint();
 
-        // Controlla se è il turno del giocatore umano
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-        if (currentPlayer.isAI()) {
-            return; // Non fare nulla durante il turno dell'IA
-        }
 
         // Converti le coordinate del mouse in coordinate della mappa
         GamePanel gamePanel = gameController.getGamePanel();
