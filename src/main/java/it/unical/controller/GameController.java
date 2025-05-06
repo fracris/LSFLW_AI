@@ -2,145 +2,149 @@ package it.unical.controller;
 
 import it.unical.gui.GameFrame;
 import it.unical.gui.GamePanel;
-import it.unical.gui.StarSystemView;
-import it.unical.model.Fleet;
-import it.unical.model.GameState;
-import it.unical.model.Player;
-import it.unical.model.StarSystem;
+import it.unical.model.*;
 
 import java.awt.Dimension;
-import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
+import java.util.Map;
+
 import javax.swing.Timer;
 
 public class GameController {
-    private GameState gameState;
-    private GameFrame gameFrame;
-    private InputController inputController;
-    private Timer gameTimer;
-    private Timer aiTimer;
-    private static final int UPDATE_RATE = 33;      // Milliseconds
-    private static final int AI_MOVE_RATE = 1000;     // Milliseconds per AI move
 
-    public GameController() {
-        // Crea lo stato di gioco
-        gameState = new GameState(new Dimension(1600, 900));
-
-        // Crea il controller di input
-        inputController = new InputController(this);
-
-        // Timer per aggiornamenti generali (flotte + GUI)
-        gameTimer = new Timer(UPDATE_RATE, e -> update());
-        // Timer dedicato per le mosse dell'IA
-        aiTimer = new Timer(AI_MOVE_RATE, e -> performAIMove());
-        aiTimer.setRepeats(true);
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
     }
 
     public GameFrame getGameFrame() {
         return gameFrame;
     }
 
-    public void setGameFrame(GameFrame gameFrame) {
-        this.gameFrame = gameFrame;
+    private GameState gameState;
+    private GameFrame gameFrame;
+    private InputController inputController;
+    private Timer gameTimer;
+    private Map<Player, AIPlayer> aiPlayers;
+    private final int UPDATE_RATE = 100; // Millisecondi (10 volte al secondo)
+    private int tickCounter = 0;
+
+    // Percorsi per DLV2 e la strategia ASP
+    private String dlv2Path;
+    private String aspStrategyPath;
+
+    public GameController(String dlv2Path, String aspStrategyPath) {
+        this.dlv2Path = dlv2Path;
+        this.aspStrategyPath = aspStrategyPath;
+
+        // Crea lo stato di gioco
+        gameState = new GameState(new Dimension(1600, 900));
+
+        // Crea il controller di input
+        inputController = new InputController(this);
+
+        // Inizializza la mappa degli AI players
+        aiPlayers = new HashMap<>();
+
+        // Inizializza il timer di gioco
+        gameTimer = new Timer(UPDATE_RATE, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                update();
+            }
+        });
     }
 
-    // Inizializza e avvia il gioco
     public void initGame() {
+        // Inizializza lo stato di gioco
         gameState.initGame(20, 2, true); // 20 sistemi, 2 giocatori, con IA
 
-        // Crea e mostra la finestra di gioco
-        gameFrame = new GameFrame("Little Stars for Little Wars", this);
-        gameFrame.setVisible(true);
+        // Crea gli AIPlayer per ogni giocatore IA
+        List<Player> aiPlayers = gameState.getAiPlayers();
+        for (Player aiPlayer : aiPlayers) {
+            this.aiPlayers.put(aiPlayer, new AIPlayer(aiPlayer, gameState, dlv2Path, aspStrategyPath));
+        }
 
-        // Avvia i timer
+        // IMPORTANTE: Aggiorna le viste dei sistemi se GameFrame è già stato creato
+        if (gameFrame != null && gameFrame.getGamePanel() != null) {
+            gameFrame.getGamePanel().updateSystemViews();
+            System.out.println("Aggiornate le viste dei sistemi: " +
+                    gameState.getGameMap().getSystems().size() + " sistemi trovati");
+        }
+
+        // Avvia il timer di gioco
         gameTimer.start();
-        aiTimer.start();
     }
 
-    // Aggiorna movimenti flotte e GUI
-    private void update() {
-        gameState.getGameMap().updateFleets(1.0);
-        gameState.updateGameState();
-        if (gameFrame != null) {
-            gameFrame.updateUI();
+    public void setGameFrame(GameFrame gameFrame) {
+        this.gameFrame = gameFrame;
+
+        // Se il gioco è già stato inizializzato, aggiorna le viste
+        if (gameState != null && gameState.getGameMap() != null &&
+                gameState.getGameMap().getSystems() != null &&
+                !gameState.getGameMap().getSystems().isEmpty()) {
+            gameFrame.getGamePanel().updateSystemViews();
+            System.out.println("Aggiornate le viste dei sistemi dopo setGameFrame");
         }
     }
 
-    // Mossa dell'IA: chiamato periodicamente dall'aiTimer
-    private void performAIMove() {
-        for (Player ai : gameState.getAiPlayers()) {
-            StarSystem source = chooseSourceForAI(ai);
-            if (source == null) continue;
-            StarSystem target = chooseTargetForAI(source);
-            int ships = decideNumShips(source);
-            if (target != null && ships > 0) {
-                gameState.sendFleet(ai, source, target, ships);
+    private void update() {
+        // Incrementa il contatore di tick
+        tickCounter++;
+
+        // Aggiorna lo stato del gioco
+        gameState.updateGameState();
+
+        // Aggiorna le flotte (movimento)
+        gameState.getGameMap().updateFleets(0.1); // 0.1 = 100ms
+
+        // Ogni secondo (10 tick) fai ragionare le IA
+        if (tickCounter % 10 == 0) {
+            handleAIPlayers();
+        }
+
+        // Aggiorna l'interfaccia grafica
+        if (gameFrame != null) {
+            gameFrame.updateUI();
+        }
+
+        // Controlla se il gioco è finito
+        if (gameState.isGameOver()) {
+            gameTimer.stop();
+            System.out.println("Game Over! Il vincitore è: " + gameState.getWinner().getName());
+        }
+    }
+
+    private void handleAIPlayers() {
+        // Esegui il ragionamento per ogni IA
+        for (AIPlayer ai : aiPlayers.values()) {
+            try {
+                ai.performTurn();
+            } catch (Exception e) {
+                System.err.println("Errore durante il turno dell'IA: " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
 
-    // Selettore sistema sorgente per IA: prende un sistema con navi sufficienti
-    private StarSystem chooseSourceForAI(Player ai) {
-        List<StarSystem> candidates = ai.getOwnedSystems().stream()
-                .filter(s -> s.getShips() > 5)
-                .collect(Collectors.toList());
-        if (candidates.isEmpty()) return null;
-        int idx = ThreadLocalRandom.current().nextInt(candidates.size());
-        return candidates.get(idx);
-    }
-
-    // Selettore sistema bersaglio per IA: sceglie un vicino non di sua proprietà
-    private StarSystem chooseTargetForAI(StarSystem source) {
-        List<StarSystem> neighbors = source.getConnectedSystems().stream()
-                .filter(s -> s.getOwner() != source.getOwner())
-                .collect(Collectors.toList());
-        if (neighbors.isEmpty()) return null;
-        int idx = ThreadLocalRandom.current().nextInt(neighbors.size());
-        return neighbors.get(idx);
-    }
-
-    // Decide quante navi inviare: metà di quelle presenti (almeno 1)
-    private int decideNumShips(StarSystem source) {
-        int available = source.getShips();
-        return available > 1 ? available / 2 : 0;
-    }
-
-    // Invia una flotta da un sistema a un altro (usato sia da UI che da IA)
+    // Invia una flotta da un sistema a un altro (per il giocatore umano)
     public Fleet sendFleet(StarSystem source, StarSystem target, int ships) {
-        return gameState.sendFleet(source.getOwner(), source, target, ships);
+        Player humanPlayer = gameState.getHumanPlayer();
+        return gameState.sendFleet(humanPlayer, source, target, ships);
     }
 
-//    // Restituisce la vista di un sistema sotto un punto specifico, o null
-//    public StarSystemView getSystemViewAt(Point p) {
-//        return gameFrame.getGamePanel().getSystemViews().stream()
-//                .filter(v -> v.contains(p))
-//                .findFirst()
-//                .orElse(null);
-//    }
-
-//    // Gestisce il click sulla mappa: seleziona sorgente o target
-//    public void handleMapClick(Point p) {
-//        StarSystemView view = getSystemViewAt(p);
-//        if (view == null) return;
-//        StarSystem sys = view.getSystem();
-//        StarSystem selected = gameFrame.getGamePanel().getSelectedSystem();
-//        if (selected == null && sys.getOwner() == gameState.getHumanPlayer()) {
-//            gameFrame.getGamePanel().setSelectedSystem(sys);
-//        } else {
-//            gameFrame.getGamePanel().setTargetSystem(sys);
-//        }
-//        gameFrame.getControlPanel().updateControls();
-//    }
-
-    // Getters per GUI e input
+    // Getters
     public GameState getGameState() {
         return gameState;
     }
 
     public GamePanel getGamePanel() {
-        return gameFrame.getGamePanel();
+        if (gameFrame != null) {
+            return gameFrame.getGamePanel();
+        }
+        return null;
     }
 
     public InputController getInputController() {

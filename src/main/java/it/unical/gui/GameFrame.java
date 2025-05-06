@@ -14,6 +14,13 @@ public class GameFrame extends JFrame {
     public GameFrame(String title, GameController gameController) {
         super(title);
         this.gameController = gameController;
+
+        // 1) Crea i pannelli
+        gamePanel    = new GamePanel(gameController);
+        statusPanel  = new StatusPanel(gameController);
+        controlPanel = new ControlPanel(gameController);
+
+        // 2) Ora che gamePanel non è più null, imposta il frame nel controller
         gameController.setGameFrame(this);
 
         // Configurazione base della finestra
@@ -22,10 +29,6 @@ public class GameFrame extends JFrame {
         setMinimumSize(new Dimension(800, 600));
         setLayout(new BorderLayout());
 
-        // Crea i pannelli principali
-        gamePanel = new GamePanel(gameController);
-        statusPanel = new StatusPanel(gameController);
-        controlPanel = new ControlPanel(gameController);
 
         // Aggiunge i pannelli alla finestra
         add(gamePanel, BorderLayout.CENTER);

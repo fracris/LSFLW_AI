@@ -7,6 +7,7 @@ import it.unical.model.StarSystem;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List; // ✅ GIUSTO
 import java.awt.geom.Line2D;
 
 public class GamePanel extends JPanel {
@@ -26,28 +27,67 @@ public class GamePanel extends JPanel {
         this.gameController = gameController;
         setBackground(Color.BLACK);
 
-        // Inizializza le viste dei sistemi e delle flotte
-        updateSystemViews();
+        // Non chiamiamo updateSystemViews() qui perché la mappa potrebbe non essere ancora inizializzata
+        systemViews = new StarSystemView[0]; // Inizializza come array vuoto
     }
+
 
     // Aggiorna le viste dei sistemi stellari
     public void updateSystemViews() {
-        GameMap gameMap = gameController.getGameState().getGameMap();
-
-        // Crea le viste per i sistemi
-        systemViews = new StarSystemView[gameMap.getSystems().size()];
-        for (int i = 0; i < gameMap.getSystems().size(); i++) {
-            StarSystem system = gameMap.getSystems().get(i);
-            systemViews[i] = new StarSystemView(system);
+        // Controllo inizializzazione
+        if (gameController == null) {
+            System.err.println("[ERRORE] GameController non inizializzato.");
+            return;
         }
 
-        // Le viste delle flotte sono dinamiche e si aggiornano nel paint
+        if (gameController.getGameState() == null) {
+            System.err.println("[ERRORE] GameState non inizializzato.");
+            return;
+        }
+
+        GameMap gameMap = gameController.getGameState().getGameMap();
+        if (gameMap == null) {
+            System.err.println("[ERRORE] GameMap non inizializzata.");
+            return;
+        }
+
+        List<StarSystem> systems = gameMap.getSystems();
+        if (systems == null || systems.isEmpty()) {
+            System.err.println("[ERRORE] Nessun sistema stellare presente nella mappa.");
+            return;
+        }
+
+        // Inizializza array di viste
+        systemViews = new StarSystemView[systems.size()];
+
+        // Crea una vista per ciascun sistema
+        for (int i = 0; i < systems.size(); i++) {
+            StarSystem system = systems.get(i);
+            systemViews[i] = new StarSystemView(system);
+
+            // Log di debug
+            System.out.printf("Sistema %d: %s (ID=%d) - Posizione: (%d, %d), Navi: %d, Proprietario: %s%n",
+                    i, system.getName(), system.getId(),
+                    system.getPosition().x, system.getPosition().y,
+                    system.getShips(),
+                    system.getOwner() != null ? system.getOwner().getName() : "Nessuno");
+        }
+
+        // Forza il repaint per mostrare tutto
+        repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
+
+        // Debugging
+        if (systemViews == null || systemViews.length == 0) {
+            g2d.setColor(Color.RED);
+            g2d.drawString("Nessun sistema da visualizzare!", 50, 50);
+            return;
+        }
 
         // Abilita l'anti-aliasing per una grafica più liscia
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -57,7 +97,7 @@ public class GamePanel extends JPanel {
         g2d.scale(scale, scale);
 
         // Disegna lo sfondo dello spazio (stelle casuali)
-        // drawBackground(g2d);
+        drawBackground(g2d);
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);
@@ -86,6 +126,11 @@ public class GamePanel extends JPanel {
 
     // Disegna le connessioni tra i sistemi
     private void drawConnections(Graphics2D g2d) {
+        if (gameController == null || gameController.getGameState() == null ||
+                gameController.getGameState().getGameMap() == null) {
+            return;
+        }
+
         GameMap gameMap = gameController.getGameState().getGameMap();
 
         g2d.setStroke(new BasicStroke(1.0f));
@@ -105,15 +150,27 @@ public class GamePanel extends JPanel {
         }
     }
 
+
+
+
     // Disegna i sistemi stellari
     private void drawSystems(Graphics2D g2d) {
+        if (systemViews == null) return;
+
         for (StarSystemView systemView : systemViews) {
-            systemView.draw(g2d);
+            if (systemView != null) {
+                systemView.draw(g2d);
+            }
         }
     }
 
     // Disegna le flotte
     private void drawFleets(Graphics2D g2d) {
+        if (gameController == null || gameController.getGameState() == null ||
+                gameController.getGameState().getGameMap() == null) {
+            return;
+        }
+
         GameMap gameMap = gameController.getGameState().getGameMap();
 
         for (Fleet fleet : gameMap.getFleets()) {
@@ -121,6 +178,8 @@ public class GamePanel extends JPanel {
             fleetView.draw(g2d);
         }
     }
+
+
 
     // Disegna la selezione attuale e l'evidenziazione per l'invio delle flotte
     private void drawSelection(Graphics2D g2d) {

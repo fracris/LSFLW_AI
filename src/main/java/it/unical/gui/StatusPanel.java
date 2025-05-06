@@ -142,17 +142,21 @@ public class StatusPanel extends JPanel {
         playersStatsPanel.revalidate();
         playersStatsPanel.repaint();
     }
+// dentro StatusPanel.java
 
-    // Aggiorna le informazioni sul sistema selezionato
     public void updateSelectedSystemInfo() {
-        StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
+        GamePanel panel = gameController.getGamePanel();
+        if (panel == null) {
+            // la GUI non è ancora pronta, esci silenziosamente
+            return;
+        }
 
+        StarSystem selectedSystem = panel.getSelectedSystem();
         if (selectedSystem != null) {
             selectedSystemLabel.setText("Nome: " + selectedSystem.getName());
             selectedSystemShipsLabel.setText("Navi: " + selectedSystem.getShips());
             selectedSystemProdLabel.setText("Produzione: +" + selectedSystem.getProductionRate());
 
-            // Aggiorna il colore in base al proprietario
             if (selectedSystem.getOwner() != null) {
                 selectedSystemLabel.setForeground(selectedSystem.getOwner().getColor());
             } else {
@@ -165,4 +169,5 @@ public class StatusPanel extends JPanel {
             selectedSystemProdLabel.setText("Produzione: -");
         }
     }
+
 }

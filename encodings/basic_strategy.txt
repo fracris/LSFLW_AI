@@ -1,0 +1,48 @@
+
+% Definizioni di base
+% -------------------
+
+my_system(S)   :- system(S), owner(S,P), ai_player(P).
+enemy_system(S):- system(S), owner(S,P), not ai_player(P), not neutral(S).
+neutral_system(S):- neutral(S).
+
+% Ausiliario per connessioni non orientate
+undirected_connected(M,S) :- connected(M,S).
+undirected_connected(M,S) :- connected(S,M).
+
+% Regole di attacco / rinforzo
+% ----------------------------
+
+% 1) Attacca neutrali adiacenti
+send_fleet(M,S,Ships) :-
+    my_system(M),
+    neutral_system(S),
+    undirected_connected(M,S),
+    ships(M,MyShips),
+    MyShips > 15,
+    Ships = MyShips - 5.
+
+% 2) Attacca nemici adiacenti con superiorità numerica
+send_fleet(M,S,Ships) :-
+    my_system(M),
+    enemy_system(S),
+    undirected_connected(M,S),
+    ships(M,MyShips),
+    ships(S,EnemyShips),
+    MyShips > EnemyShips + 10,
+    Ships = MyShips - 3.
+
+% 3) Rinforza i tuoi sistemi deboli
+send_fleet(M,S,Ships) :-
+    my_system(M),
+    my_system(S),
+    M != S,
+    undirected_connected(M,S),
+    ships(M,MyShips),
+    ships(S,TargetShips),
+    MyShips > 20,
+    TargetShips < 10,
+    Ships = MyShips / 2.
+
+% MOSTRIAMO solo le mosse send_fleet/3
+#show send_fleet/3.
