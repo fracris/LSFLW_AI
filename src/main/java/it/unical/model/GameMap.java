@@ -2,9 +2,7 @@ package it.unical.model;
 
 import java.awt.Dimension;
 import java.awt.Point;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class GameMap {
     private List<StarSystem> systems;
@@ -59,11 +57,37 @@ public class GameMap {
 
     // Crea connessioni tra i sistemi stellari
     private void createConnections() {
-        // Implementazione semplice: connette ogni sistema ai 2-3 sistemi più vicini
+
+// Crea connessioni tra i sistemi stellari in modo da garantire che tutti i sistemi siano collegati in un unico grafo connesso
+        Set<StarSystem> connected = new HashSet<>();
+        Queue<StarSystem> toConnect = new LinkedList<>();
+
+// Inizializza con il primo sistema
+        connected.add(systems.get(0));
+        toConnect.add(systems.get(0));
+
+// Collega iterativamente i sistemi finché non sono tutti parte dello stesso grafo
+        while (connected.size() < systems.size()) {
+            StarSystem current = toConnect.poll();
+
+            // Trova i sistemi non ancora collegati più vicini a 'current'
+            List<StarSystem> nearest = findNearestSystems(current, systems.size());
+            for (StarSystem system : nearest) {
+                if (!connected.contains(system)) {
+                    // Collega i due sistemi
+                    current.connectTo(system);
+                    connected.add(system);
+                    toConnect.add(system);
+                    break; // Collega un sistema alla volta per evitare cicli
+                }
+            }
+        }
+
+// Una volta garantita la connessione di tutti i sistemi, aggiungi connessioni aggiuntive per varietà
         for (StarSystem system : systems) {
-            List<StarSystem> nearestSystems = findNearestSystems(system, 3);
-            for (StarSystem nearest : nearestSystems) {
-                system.connectTo(nearest);
+            List<StarSystem> nearest = findNearestSystems(system, 3);
+            for (StarSystem nearby : nearest) {
+                system.connectTo(nearby);
             }
         }
     }
@@ -179,6 +203,7 @@ public class GameMap {
         attacker.removeFleet(fleet);
         fleets.remove(fleet);
     }
+
     // Getters
     public List<StarSystem> getSystems() { return systems; }
     public List<Fleet> getFleets() { return fleets; }

@@ -10,8 +10,6 @@ import java.awt.*;
 
 public class StatusPanel extends JPanel {
     private GameController gameController;
-    private JLabel turnLabel;
-    private JLabel currentPlayerLabel;
     private JPanel playersStatsPanel;
     private JPanel selectedSystemPanel;
     private JLabel selectedSystemLabel;
@@ -30,14 +28,6 @@ public class StatusPanel extends JPanel {
         // Crea il pannello per le informazioni sul turno
         JPanel turnPanel = new JPanel(new GridLayout(2, 1, 0, 5));
         turnPanel.setOpaque(false);
-        turnLabel = new JLabel("Turno: 1");
-        turnLabel.setForeground(Color.WHITE);
-        turnLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        currentPlayerLabel = new JLabel("Giocatore: 1");
-        currentPlayerLabel.setForeground(Color.WHITE);
-        currentPlayerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        turnPanel.add(turnLabel);
-        turnPanel.add(currentPlayerLabel);
 
         // Crea il pannello per le statistiche dei giocatori
         playersStatsPanel = new JPanel();

@@ -5,7 +5,6 @@ import java.util.List;
 import java.awt.Color;
 import java.awt.Dimension;
 
-
 public class GameState {
     private GameMap gameMap;
     private List<Player> players;
@@ -20,7 +19,7 @@ public class GameState {
         this.winner    = null;
     }
 
-    /** Inizializza una nuova partita */
+    // Inizializza una nuova partita
     public void initGame(int numSystems, int numPlayers, boolean withAI) {
         // Genera la mappa
         gameMap.generateRandomMap(numSystems, 100);
@@ -28,18 +27,19 @@ public class GameState {
         // Crea i giocatori
         players.clear();
         Color[] playerColors = {Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW};
+
         for (int i = 0; i < numPlayers; i++) {
-            boolean isAI = (i > 0 && withAI);
-            Player p = new Player(i, "Giocatore " + (i+1), playerColors[i], isAI);
-            players.add(p);
+            boolean isAI = (i > 0 && withAI); // Solo il primo giocatore è umano se withAI è true
+            Player player = new Player(i, "Giocatore " + (i + 1), playerColors[i], isAI);
+            players.add(player);
         }
 
-        // Assegna sistemi e navi iniziali
+        // Assegna sistemi iniziali
         assignInitialSystems();
 
         // Reset stato di vittoria
         gameOver = false;
-        winner   = null;
+        winner = null;
     }
 
     /** Restituisce il giocatore umano (assumiamo sia sempre il primo in lista) */
@@ -48,6 +48,30 @@ public class GameState {
             if (!p.isAI()) return p;
         }
         return null;
+    }
+    // Assegna i sistemi iniziali ai giocatori
+    private void assignInitialSystems() {
+        List<StarSystem> systems = gameMap.getSystems();
+        int numPlayers = players.size();
+
+        int systemsPerPlayer = 1;
+
+        for (int i = 0; i < numPlayers; i++) {
+            Player player = players.get(i);
+
+            // Cerca di prendere sistemi distanti tra loro per ogni giocatore
+            int startIdx = (systems.size() / numPlayers) * i;
+            for (int j = 0; j < systemsPerPlayer; j++) {
+                int idx = startIdx % systems.size();
+                StarSystem system = systems.get(idx);
+
+                // Assegna il sistema al giocatore
+                player.addSystem(system);
+
+                // Aggiungi delle navi iniziali
+                system.addShips(10);
+            }
+        }
     }
 
     /** Restituisce tutti i giocatori IA */
@@ -67,11 +91,13 @@ public class GameState {
                 sys.produceShips();
             }
         }
+
+        // Controlla se c'è un vincitore
         checkGameOver();
         count++;
     }
 
-    /** Controlla se c'è un vincitore */
+    // Controlla se il gioco è finito
     private void checkGameOver() {
         List<Player> active = new ArrayList<>();
         for (Player p : players) {
@@ -107,20 +133,4 @@ public class GameState {
     public boolean isGameOver()    { return gameOver; }
     public Player getWinner()      { return winner; }
 
-    // --- helper privato ---
-    private void assignInitialSystems() {
-        List<StarSystem> systems   = gameMap.getSystems();
-        int numPlayers             = players.size();
-        int perPlayer              = Math.max(1, systems.size() / (numPlayers * 3));
-        for (int i = 0; i < numPlayers; i++) {
-            Player p = players.get(i);
-            int startIdx = (systems.size() / numPlayers) * i;
-            for (int j = 0; j < perPlayer; j++) {
-                int idx = (startIdx + j * (systems.size()/(perPlayer*numPlayers))) % systems.size();
-                StarSystem sys = systems.get(idx);
-                p.addSystem(sys);
-                sys.addShips(10);
-            }
-        }
-    }
 }

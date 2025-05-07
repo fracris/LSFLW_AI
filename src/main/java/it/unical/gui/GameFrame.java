@@ -20,7 +20,6 @@ public class GameFrame extends JFrame {
         statusPanel  = new StatusPanel(gameController);
         controlPanel = new ControlPanel(gameController);
 
-        // 2) Ora che gamePanel non è più null, imposta il frame nel controller
         gameController.setGameFrame(this);
 
         // Configurazione base della finestra
@@ -38,6 +37,7 @@ public class GameFrame extends JFrame {
         // Imposta gamePanel come listener delle azioni dell'utente
         gamePanel.addMouseListener(gameController.getInputController());
         gamePanel.addMouseMotionListener(gameController.getInputController());
+        gamePanel.addMouseWheelListener(gameController.getInputController());
 
         // Centro la finestra sullo schermo
         setLocationRelativeTo(null);

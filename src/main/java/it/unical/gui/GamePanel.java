@@ -7,13 +7,14 @@ import it.unical.model.StarSystem;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List; // ✅ GIUSTO
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 
 public class GamePanel extends JPanel {
     private GameController gameController;
     private StarSystemView[] systemViews;
     private FleetView[] fleetViews;
+    private int starCountRate = 0;
 
     // Variabili per gestire lo zoom e il pan
     private double scale = 1.0;
@@ -23,71 +24,52 @@ public class GamePanel extends JPanel {
     private StarSystem selectedSystem;
     private StarSystem targetSystem;
 
+    // Variabili per gestire le stelle inizializzate una sola volta
+    private Point[] starPositions;
+    private int[] starSizes;
+
     public GamePanel(GameController gameController) {
         this.gameController = gameController;
         setBackground(Color.BLACK);
 
-        // Non chiamiamo updateSystemViews() qui perché la mappa potrebbe non essere ancora inizializzata
-        systemViews = new StarSystemView[0]; // Inizializza come array vuoto
+        // Inizializza le viste dei sistemi e delle flotte
+        updateSystemViews();
+        initializeStars(); // Inizializza le posizioni delle stelle
     }
 
-
-    // Aggiorna le viste dei sistemi stellari
-    public void updateSystemViews() {
-        // Controllo inizializzazione
-        if (gameController == null) {
-            System.err.println("[ERRORE] GameController non inizializzato.");
-            return;
-        }
-
-        if (gameController.getGameState() == null) {
-            System.err.println("[ERRORE] GameState non inizializzato.");
-            return;
-        }
+    // Metodo per inizializzare le stelle una sola volta
+    private void initializeStars() {
+        int starCount = 200;
+        starPositions = new Point[starCount];
+        starSizes = new int[starCount];
 
         GameMap gameMap = gameController.getGameState().getGameMap();
-        if (gameMap == null) {
-            System.err.println("[ERRORE] GameMap non inizializzata.");
-            return;
+        int mapWidth = (int) gameMap.getMapSize().getWidth();
+        int mapHeight = (int) gameMap.getMapSize().getHeight();
+
+        for (int i = 0; i < starCount; i++) {
+            int x = (int) (Math.random() * mapWidth);
+            int y = (int) (Math.random() * mapHeight);
+            int size = (int) (Math.random() * 10) + 1;
+            starPositions[i] = new Point(x, y);
+            starSizes[i] = size;
         }
+    }
 
-        List<StarSystem> systems = gameMap.getSystems();
-        if (systems == null || systems.isEmpty()) {
-            System.err.println("[ERRORE] Nessun sistema stellare presente nella mappa.");
-            return;
+    // Disegna lo sfondo con stelle random inizializzate una sola volta
+    private void drawBackground(Graphics2D g2d) {
+        g2d.setColor(Color.WHITE);
+        for (int i = 0; i < starPositions.length; i++) {
+            Point position = starPositions[i];
+            int size = starSizes[i];
+            g2d.fillOval(position.x, position.y, size, size);
         }
-
-        // Inizializza array di viste
-        systemViews = new StarSystemView[systems.size()];
-
-        // Crea una vista per ciascun sistema
-        for (int i = 0; i < systems.size(); i++) {
-            StarSystem system = systems.get(i);
-            systemViews[i] = new StarSystemView(system);
-
-            // Log di debug
-            System.out.printf("Sistema %d: %s (ID=%d) - Posizione: (%d, %d), Navi: %d, Proprietario: %s%n",
-                    i, system.getName(), system.getId(),
-                    system.getPosition().x, system.getPosition().y,
-                    system.getShips(),
-                    system.getOwner() != null ? system.getOwner().getName() : "Nessuno");
-        }
-
-        // Forza il repaint per mostrare tutto
-        repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-
-        // Debugging
-        if (systemViews == null || systemViews.length == 0) {
-            g2d.setColor(Color.RED);
-            g2d.drawString("Nessun sistema da visualizzare!", 50, 50);
-            return;
-        }
 
         // Abilita l'anti-aliasing per una grafica più liscia
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -97,7 +79,7 @@ public class GamePanel extends JPanel {
         g2d.scale(scale, scale);
 
         // Disegna lo sfondo dello spazio (stelle casuali)
-        drawBackground(g2d);
+        //drawBackground(g2d);
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);
@@ -110,27 +92,25 @@ public class GamePanel extends JPanel {
 
         // Disegna la selezione attuale (se presente)
         drawSelection(g2d);
+        starCountRate++;
     }
 
-    // Disegna lo sfondo con stelle casuali
-    private void drawBackground(Graphics2D g2d) {
-        // Implementazione semplice: stelle casuali
-        g2d.setColor(Color.WHITE);
-        for (int i = 0; i < 200; i++) {
-            int x = (int) (Math.random() * getWidth() / scale);
-            int y = (int) (Math.random() * getHeight() / scale);
-            int size = (int) (Math.random() * 2) + 1;
-            g2d.fillOval(x, y, size, size);
+    // Aggiorna le viste dei sistemi stellari
+    public void updateSystemViews() {
+        GameMap gameMap = gameController.getGameState().getGameMap();
+
+        // Crea le viste per i sistemi
+        systemViews = new StarSystemView[gameMap.getSystems().size()];
+        for (int i = 0; i < gameMap.getSystems().size(); i++) {
+            StarSystem system = gameMap.getSystems().get(i);
+            systemViews[i] = new StarSystemView(system);
         }
+
+        // Le viste delle flotte sono dinamiche e si aggiornano nel paint
     }
 
     // Disegna le connessioni tra i sistemi
     private void drawConnections(Graphics2D g2d) {
-        if (gameController == null || gameController.getGameState() == null ||
-                gameController.getGameState().getGameMap() == null) {
-            return;
-        }
-
         GameMap gameMap = gameController.getGameState().getGameMap();
 
         g2d.setStroke(new BasicStroke(1.0f));
@@ -150,27 +130,15 @@ public class GamePanel extends JPanel {
         }
     }
 
-
-
-
     // Disegna i sistemi stellari
     private void drawSystems(Graphics2D g2d) {
-        if (systemViews == null) return;
-
         for (StarSystemView systemView : systemViews) {
-            if (systemView != null) {
-                systemView.draw(g2d);
-            }
+            systemView.draw(g2d);
         }
     }
 
     // Disegna le flotte
     private void drawFleets(Graphics2D g2d) {
-        if (gameController == null || gameController.getGameState() == null ||
-                gameController.getGameState().getGameMap() == null) {
-            return;
-        }
-
         GameMap gameMap = gameController.getGameState().getGameMap();
 
         for (Fleet fleet : gameMap.getFleets()) {
@@ -178,8 +146,6 @@ public class GamePanel extends JPanel {
             fleetView.draw(g2d);
         }
     }
-
-
 
     // Disegna la selezione attuale e l'evidenziazione per l'invio delle flotte
     private void drawSelection(Graphics2D g2d) {
@@ -246,5 +212,25 @@ public class GamePanel extends JPanel {
             }
         }
         return null;
+    }
+
+    public void panMap(int deltaX, int deltaY) {
+        viewPosition.translate(deltaX, deltaY);
+        repaint();
+    }
+
+    public void zoomMap(double v, Point mousePosition) {
+        Point mapMousePointBeforeZoom = screenToMap(mousePosition);
+
+        scale *= v;
+        scale = Math.max(0.01, Math.min(scale, 50.0));
+
+        Point mapMousePointAfterZoom = screenToMap(mousePosition);
+        viewPosition.translate(
+                (int) ((mapMousePointAfterZoom.x-mapMousePointBeforeZoom.x) * scale),
+                (int) ((mapMousePointAfterZoom.y-mapMousePointBeforeZoom.y) * scale)
+        );
+
+        repaint();
     }
 }

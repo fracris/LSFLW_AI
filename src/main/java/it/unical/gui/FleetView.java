@@ -1,14 +1,27 @@
 package it.unical.gui;
 
 import it.unical.model.Fleet;
+import it.unical.utils.ResourceLoader;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 
 public class FleetView {
     private Fleet fleet;
-    private static final int FLEET_SIZE = 10;
     private static final Font FLEET_FONT = new Font("Arial", Font.BOLD, 10);
+    private static final int FLEET_IMAGE_WIDTH = 30;
+    private static final int FLEET_IMAGE_HEIGHT = 30;
+
+    private static BufferedImage playerShipImage;
+    private static BufferedImage aiShipImage;
+
+    static {
+        playerShipImage = ResourceLoader.loadImage("images/blue_ship.png"); // Replace with actual path
+        aiShipImage = ResourceLoader.loadImage("images/red_ship.png"); // Replace with actual path
+        System.out.println(playerShipImage);
+        System.out.println(aiShipImage);
+    }
 
     public FleetView(Fleet fleet) {
         this.fleet = fleet;
@@ -17,7 +30,7 @@ public class FleetView {
     public void draw(Graphics2D g2d) {
         // Ottieni la posizione corrente della flotta
         Point position = fleet.getCurrentPosition();
-        Color fleetColor = fleet.getColor();
+        BufferedImage fleetImage = (!fleet.getOwner().isAI()) ? playerShipImage : aiShipImage;
 
         // Calcola l'angolo di rotazione in base alla direzione di movimento
         double dx = fleet.getDestination().getPosition().x - fleet.getSource().getPosition().x;
@@ -27,19 +40,13 @@ public class FleetView {
         // Salva la trasformazione corrente
         AffineTransform oldTransform = g2d.getTransform();
 
-        // Applica la rotazione
+        // Applica la rotazione e traslazione
         g2d.translate(position.x, position.y);
         g2d.rotate(angle);
 
-        // Disegna la navicella (triangolo)
-        g2d.setColor(fleetColor);
-        int[] xPoints = {FLEET_SIZE, -FLEET_SIZE/2, -FLEET_SIZE/2};
-        int[] yPoints = {0, -FLEET_SIZE/2, FLEET_SIZE/2};
-        g2d.fillPolygon(xPoints, yPoints, 3);
-
-        // Disegna il bordo
-        g2d.setColor(Color.WHITE);
-        g2d.drawPolygon(xPoints, yPoints, 3);
+        // Disegna l'immagine della flotta con dimensioni fissate
+        g2d.drawImage(fleetImage, -FLEET_IMAGE_WIDTH / 2, -FLEET_IMAGE_HEIGHT / 2,
+                FLEET_IMAGE_WIDTH, FLEET_IMAGE_HEIGHT, null);
 
         // Ripristina la trasformazione
         g2d.setTransform(oldTransform);
@@ -49,7 +56,7 @@ public class FleetView {
         String shipsText = String.valueOf(fleet.getShips());
         int shipsWidth = g2d.getFontMetrics().stringWidth(shipsText);
         g2d.setColor(Color.WHITE);
-        g2d.drawString(shipsText, position.x - shipsWidth/2, position.y - FLEET_SIZE - 2);
+        g2d.drawString(shipsText, position.x - shipsWidth / 2, position.y - FLEET_IMAGE_HEIGHT / 2 - 2);
     }
 
     // Getter

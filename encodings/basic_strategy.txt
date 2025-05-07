@@ -44,5 +44,36 @@ send_fleet(M,S,Ships) :-
     TargetShips < 10,
     Ships = MyShips / 2.
 
+% Weak Constraint 1: Penalizza il rinforzo di sistemi deboli
+:~ send_fleet(M,S,Ships),
+   my_system(M),
+   my_system(S),
+   M != S,
+   undirected_connected(M,S),
+   ships(M,MyShips),
+   ships(S,TargetShips),
+   MyShips > 20,
+   TargetShips < 10,
+   Ships = MyShips / 2. [3@1]
+
+% Weak Constraint 2: Penalizza l'attacco a nemici con superiorità numerica
+:~ send_fleet(M,S,Ships),
+   my_system(M),
+   enemy_system(S),
+   undirected_connected(M,S),
+   ships(M,MyShips),
+   ships(S,EnemyShips),
+   MyShips > EnemyShips + 10,
+   Ships = MyShips - 3. [2@2]
+
+% Weak Constraint 3: Penalizza l'attacco a sistemi neutrali
+:~ send_fleet(M,S,Ships),
+   my_system(M),
+   neutral_system(S),
+   undirected_connected(M,S),
+   ships(M,MyShips),
+   MyShips > 15,
+   Ships = MyShips - 5. [1@3]
+
 % MOSTRIAMO solo le mosse send_fleet/3
 #show send_fleet/3.

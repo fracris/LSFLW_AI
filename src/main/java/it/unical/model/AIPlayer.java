@@ -38,7 +38,7 @@ public class AIPlayer {
         }
 
         this.isInitialized = true;
-        System.out.println("AIPlayer inizializzato per " + player.getName());
+        //System.out.println("AIPlayer inizializzato per " + player.getName());
     }
 
     public boolean performTurn() {
@@ -48,11 +48,11 @@ public class AIPlayer {
         }
 
         try {
-            System.out.println("Esecuzione del turno IA per " + player.getName());
+            //System.out.println("Esecuzione del turno IA per " + player.getName());
 
             // Genera i fatti ASP
             String aspFacts = convertGameStateToASP();
-            System.out.println("=== Fatti ASP per IA ===\n" + aspFacts);
+            //System.out.println("=== Fatti ASP per IA ===\n" + aspFacts);
 
             // Esecuzione diretta del comando DLV con i parametri corretti
             ProcessBuilder pb = new ProcessBuilder(
@@ -105,9 +105,9 @@ public class AIPlayer {
             // Estrai gli answerset dall'output
             List<String> actions = parseAnswerSets(result);
             if (!actions.isEmpty()) {
-                System.out.println("=== Azioni estratte ===");
+                //System.out.println("=== Azioni estratte ===");
                 for (String action : actions) {
-                    System.out.println(action);
+                    //System.out.println(action);
                 }
                 return executeActionsFromStrings(actions);
             } else {
@@ -168,17 +168,23 @@ public class AIPlayer {
                     continue;
                 }
                 if (source.getShips() < ships) {
+                    /*
                     System.err.println("Il sistema " + sourceId + " non ha abbastanza navi: " +
                             source.getShips() + " < " + ships);
+
+                     */
                     continue;
                 }
 
                 Fleet fleet = gameState.sendFleet(player, source, target, ships);
                 if (fleet != null) {
+                    /*
                     System.out.println("IA " + player.getName() +
                             " invia " + ships + " navi da " +
                             source.getName() + " a " + target.getName());
-                    actionsExecuted = true;
+
+                     */
+                    return true;
                 }
             } catch (Exception e) {
                 System.err.println("Errore nell'interpretazione dell'azione: " + atomStr);

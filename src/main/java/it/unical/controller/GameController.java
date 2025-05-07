@@ -10,25 +10,16 @@ import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.swing.Timer;
 
 public class GameController {
-
-    public void setGameState(GameState gameState) {
-        this.gameState = gameState;
-    }
-
-    public GameFrame getGameFrame() {
-        return gameFrame;
-    }
 
     private GameState gameState;
     private GameFrame gameFrame;
     private InputController inputController;
     private Timer gameTimer;
     private Map<Player, AIPlayer> aiPlayers;
-    private final int UPDATE_RATE = 100; // Millisecondi (10 volte al secondo)
+    private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
 
     // Percorsi per DLV2 e la strategia ASP
@@ -49,14 +40,18 @@ public class GameController {
         aiPlayers = new HashMap<>();
 
         // Inizializza il timer di gioco
-        gameTimer = new Timer(UPDATE_RATE, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                update();
-            }
-        });
+        gameTimer = new Timer(UPDATE_RATE, e -> update());
     }
 
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+    }
+
+    public GameFrame getGameFrame() {
+        return gameFrame;
+    }
+
+    // Inizializza e avvia il gioco
     public void initGame() {
         // Inizializza lo stato di gioco
         gameState.initGame(20, 2, true); // 20 sistemi, 2 giocatori, con IA
@@ -81,13 +76,6 @@ public class GameController {
     public void setGameFrame(GameFrame gameFrame) {
         this.gameFrame = gameFrame;
 
-        // Se il gioco è già stato inizializzato, aggiorna le viste
-        if (gameState != null && gameState.getGameMap() != null &&
-                gameState.getGameMap().getSystems() != null &&
-                !gameState.getGameMap().getSystems().isEmpty()) {
-            gameFrame.getGamePanel().updateSystemViews();
-            System.out.println("Aggiornate le viste dei sistemi dopo setGameFrame");
-        }
     }
 
     private void update() {
@@ -98,10 +86,9 @@ public class GameController {
         gameState.updateGameState();
 
         // Aggiorna le flotte (movimento)
-        gameState.getGameMap().updateFleets(0.1); // 0.1 = 100ms
+        gameState.getGameMap().updateFleets(0.3);
 
-        // Ogni secondo (10 tick) fai ragionare le IA
-        if (tickCounter % 10 == 0) {
+        if (tickCounter % 200 == 0) {
             handleAIPlayers();
         }
 
@@ -130,9 +117,9 @@ public class GameController {
     }
 
     // Invia una flotta da un sistema a un altro (per il giocatore umano)
-    public Fleet sendFleet(StarSystem source, StarSystem target, int ships) {
+    public void sendFleet(StarSystem source, StarSystem target, int ships) {
         Player humanPlayer = gameState.getHumanPlayer();
-        return gameState.sendFleet(humanPlayer, source, target, ships);
+        gameState.sendFleet(humanPlayer, source, target, ships);
     }
 
     // Getters
