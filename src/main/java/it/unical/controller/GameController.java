@@ -22,13 +22,8 @@ public class GameController {
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
 
-    // Percorsi per DLV2 e la strategia ASP
-    private String dlv2Path;
-    private String aspStrategyPath;
 
-    public GameController(String dlv2Path, String aspStrategyPath) {
-        this.dlv2Path = dlv2Path;
-        this.aspStrategyPath = aspStrategyPath;
+    public GameController() {
 
         // Crea lo stato di gioco
         gameState = new GameState(new Dimension(1600, 900));
@@ -59,7 +54,7 @@ public class GameController {
         // Crea gli AIPlayer per ogni giocatore IA
         List<Player> aiPlayers = gameState.getAiPlayers();
         for (Player aiPlayer : aiPlayers) {
-            this.aiPlayers.put(aiPlayer, new AIPlayer(aiPlayer, gameState, dlv2Path, aspStrategyPath));
+            this.aiPlayers.put(aiPlayer, new AIPlayer(aiPlayer, gameState));
         }
 
         // IMPORTANTE: Aggiorna le viste dei sistemi se GameFrame è già stato creato

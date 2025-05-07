@@ -19,8 +19,6 @@ public class FleetView {
     static {
         playerShipImage = ResourceLoader.loadImage("images/blue_ship.png"); // Replace with actual path
         aiShipImage = ResourceLoader.loadImage("images/red_ship.png"); // Replace with actual path
-        System.out.println(playerShipImage);
-        System.out.println(aiShipImage);
     }
 
     public FleetView(Fleet fleet) {

@@ -1,33 +1,29 @@
 package it.unical.model;
 
-import java.io.*;
+import java.io.File;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import it.unical.mat.embasp.base.Handler;
+import it.unical.mat.embasp.base.InputProgram;
+import it.unical.mat.embasp.base.Output;
+import it.unical.mat.embasp.languages.asp.ASPInputProgram;
+import it.unical.mat.embasp.platforms.desktop.DesktopHandler;
+import it.unical.mat.embasp.specializations.dlv2.desktop.DLV2DesktopService;
 
 public class AIPlayer {
     private Player player;
     private GameState gameState;
-    private String dlv2Path;
-    private String aspStrategy;
+    private String aspStrategy = "encodings/basic_strategy.txt";
     private boolean isInitialized;
-    private int timeout = 10; // Timeout in secondi
 
-    public AIPlayer(Player player, GameState gameState, String dlv2Path, String aspStrategy) {
+    public AIPlayer(Player player, GameState gameState) {
         this.player = player;
         this.gameState = gameState;
-        this.dlv2Path = dlv2Path;
-        this.aspStrategy = aspStrategy;
 
         if (!player.isAI()) {
             System.err.println("ATTENZIONE: AIPlayer assegnato a un giocatore non IA");
-            return;
-        }
-
-        File dlv2File = new File(dlv2Path);
-        if (!dlv2File.exists()) {
-            System.err.println("ERRORE: DLV2 non trovato in: " + dlv2Path);
             return;
         }
 
@@ -38,93 +34,53 @@ public class AIPlayer {
         }
 
         this.isInitialized = true;
-        //System.out.println("AIPlayer inizializzato per " + player.getName());
     }
 
-    public boolean performTurn() {
+    public void performTurn() {
         if (!isInitialized) {
             System.err.println("AIPlayer non inizializzato, impossibile eseguire il turno");
-            return false;
+            return;
         }
 
         try {
-            //System.out.println("Esecuzione del turno IA per " + player.getName());
-
             // Genera i fatti ASP
             String aspFacts = convertGameStateToASP();
-            //System.out.println("=== Fatti ASP per IA ===\n" + aspFacts);
 
-            // Esecuzione diretta del comando DLV con i parametri corretti
-            ProcessBuilder pb = new ProcessBuilder(
-                    dlv2Path,
-                    "--stdin",
-                    aspStrategy
-            );
-            pb.redirectErrorStream(true); // Combina stderr con stdout per semplificare la lettura
+            // Creazione del handler
+            Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
 
-            System.out.println("Esecuzione comando: " + String.join(" ", pb.command()));
+            // Imposta la strategia ASP
+            InputProgram strategyProgram = new ASPInputProgram();
+            strategyProgram.addFilesPath(aspStrategy);
+            handler.addProgram(strategyProgram);
 
-            Process process = pb.start();
+            // Imposta i fatti del gioco
+            InputProgram factsProgram = new ASPInputProgram();
+            factsProgram.addProgram(aspFacts);
+            handler.addProgram(factsProgram);
 
-            // Invio dei fatti ASP allo standard input del processo DLV
-            try (OutputStreamWriter writer = new OutputStreamWriter(process.getOutputStream())) {
-                writer.write(aspFacts);
-                writer.flush();
+            Output output = handler.startSync();
+
+            if (output == null || output.getErrors() != null && !output.getErrors().isEmpty()) {
+                System.err.println("Errore durante l'esecuzione di EMBASP: " + output.getErrors());
+                return;
             }
 
-            // Lettura dell'output con timeout
-            StringBuilder output = new StringBuilder();
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            Future<String> future = executor.submit(() -> {
-                StringBuilder sb = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line).append("\n");
-                    }
-                }
-                return sb.toString();
-            });
-
-            try {
-                String result = future.get(timeout, TimeUnit.SECONDS);
-                output.append(result);
-            } catch (TimeoutException e) {
-                future.cancel(true);
-                process.destroyForcibly();
-                System.err.println("ERRORE: Timeout durante l'esecuzione di DLV dopo " + timeout + " secondi");
-                return false;
-            } finally {
-                executor.shutdownNow();
-            }
-
-            // Stampa l'output completo per debug
-            String result = output.toString();
-            System.out.println("=== Output DLV completo ===\n" + result);
-
-            // Estrai gli answerset dall'output
-            List<String> actions = parseAnswerSets(result);
+            // Estrazione e interpretazione degli answer set
+            List<String> actions = parseAnswerSets(output.getOutput());
             if (!actions.isEmpty()) {
-                //System.out.println("=== Azioni estratte ===");
-                for (String action : actions) {
-                    //System.out.println(action);
-                }
-                return executeActionsFromStrings(actions);
+                executeActionsFromStrings(actions);
             } else {
                 System.out.println("Nessun answer set valido trovato per " + player.getName());
-                return false;
             }
         } catch (Exception e) {
             System.err.println("Errore durante il turno IA: " + e.getMessage());
             e.printStackTrace();
-            return false;
         }
     }
 
-
     private List<String> parseAnswerSets(String dlvOutput) {
         List<String> actions = new ArrayList<>();
-        // Pattern che cattura send_fleet(arg1,arg2,arg3)
         Pattern p = Pattern.compile("send_fleet\\([^)]*\\)");
         Matcher m = p.matcher(dlvOutput);
         while (m.find()) {
@@ -134,13 +90,11 @@ public class AIPlayer {
         return actions;
     }
 
-
     private boolean executeActionsFromStrings(List<String> actions) {
         boolean actionsExecuted = false;
 
         for (String atomStr : actions) {
             try {
-                // Estrai i parametri da send_fleet(source,target,ships)
                 String content = atomStr.substring("send_fleet(".length(), atomStr.length() - 1);
                 String[] params = content.split(",");
                 if (params.length != 3) {
@@ -168,22 +122,11 @@ public class AIPlayer {
                     continue;
                 }
                 if (source.getShips() < ships) {
-                    /*
-                    System.err.println("Il sistema " + sourceId + " non ha abbastanza navi: " +
-                            source.getShips() + " < " + ships);
-
-                     */
                     continue;
                 }
 
                 Fleet fleet = gameState.sendFleet(player, source, target, ships);
                 if (fleet != null) {
-                    /*
-                    System.out.println("IA " + player.getName() +
-                            " invia " + ships + " navi da " +
-                            source.getName() + " a " + target.getName());
-
-                     */
                     return true;
                 }
             } catch (Exception e) {
@@ -231,7 +174,7 @@ public class AIPlayer {
                     .append(fleet.getShips()).append(",")
                     .append(fleet.getSource().getId()).append(",")
                     .append(fleet.getDestination().getId()).append(",")
-                    .append((int)fleet.getProgress()).append(").\n");
+                    .append((int) fleet.getProgress()).append(").\n");
         }
 
         return facts.toString();
@@ -246,10 +189,5 @@ public class AIPlayer {
 
     public Player getPlayer() {
         return player;
-    }
-
-    // Metodo per impostare il timeout (opzionale)
-    public void setTimeout(int seconds) {
-        this.timeout = seconds;
     }
 }
