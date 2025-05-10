@@ -90,8 +90,7 @@ public class AIPlayer {
         return actions;
     }
 
-    private boolean executeActionsFromStrings(List<String> actions) {
-        boolean actionsExecuted = false;
+    private void executeActionsFromStrings(List<String> actions) {
 
         for (String atomStr : actions) {
             try {
@@ -101,6 +100,7 @@ public class AIPlayer {
                     System.err.println("Formato non valido: " + atomStr);
                     continue;
                 }
+                System.out.println("Azione eseguita: " + params[0] + ", " + params[1] + ", " + params[2]);
 
                 int sourceId = Integer.parseInt(params[0].trim());
                 int targetId = Integer.parseInt(params[1].trim());
@@ -127,7 +127,7 @@ public class AIPlayer {
 
                 Fleet fleet = gameState.sendFleet(player, source, target, ships);
                 if (fleet != null) {
-                    return true;
+                    return;
                 }
             } catch (Exception e) {
                 System.err.println("Errore nell'interpretazione dell'azione: " + atomStr);
@@ -135,7 +135,6 @@ public class AIPlayer {
             }
         }
 
-        return actionsExecuted;
     }
 
     private String convertGameStateToASP() {

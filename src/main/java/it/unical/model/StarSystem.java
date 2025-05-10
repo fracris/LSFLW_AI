@@ -1,7 +1,6 @@
 package it.unical.model;
 
 import java.awt.Point;
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,9 +12,34 @@ public class StarSystem {
     private Player owner;
     private int productionRate;
     private List<StarSystem> connectedSystems;
-    private Color color;
+    private boolean automated=false;
+    private StarSystem automatedTo=null;
+    private int sendMode=100;
 
-    // Costruttore
+    public StarSystem getAutomatedTo() {
+        return automatedTo;
+    }
+
+    public void setAutomatedTo(StarSystem automatedTo) {
+        this.automatedTo = automatedTo;
+    }
+
+    public boolean isAutomated() {
+        return automated;
+    }
+
+    public void setAutomated(boolean automated) {
+        this.automated = automated;
+    }
+
+    public int getSendMode() {
+        return sendMode;
+    }
+
+    public void setSendMode(int sendMode) {
+        this.sendMode = sendMode;
+    }
+
     public StarSystem(int id, String name, Point position, int productionRate) {
         this.id = id;
         this.name = name;
@@ -24,7 +48,6 @@ public class StarSystem {
         this.owner = null;
         this.productionRate = productionRate;
         this.connectedSystems = new ArrayList<>();
-        this.color = Color.GRAY; // Sistema neutrale
     }
 
     // Metodi per connettere i sistemi stellari (creazione del grafo)
@@ -40,12 +63,10 @@ public class StarSystem {
         ships += amount;
     }
 
-    public boolean removeShips(int amount) {
+    public void removeShips(int amount) {
         if (ships >= amount) {
             ships -= amount;
-            return true;
         }
-        return false;
     }
 
     // Metodo per la produzione di navi per turno
@@ -58,11 +79,6 @@ public class StarSystem {
     // Metodo per cambiare proprietario
     public void setOwner(Player newOwner) {
         this.owner = newOwner;
-        if (newOwner != null) {
-            this.color = newOwner.getColor();
-        } else {
-            this.color = Color.GRAY;
-        }
     }
 
     // Getters e setters
@@ -72,7 +88,6 @@ public class StarSystem {
     public int getShips() { return ships; }
     public Player getOwner() { return owner; }
     public List<StarSystem> getConnectedSystems() { return connectedSystems; }
-    public Color getColor() { return color; }
     public int getProductionRate() { return productionRate; }
 
     public void setShips(int i) {

@@ -3,11 +3,9 @@ package it.unical.gui;
 import it.unical.model.StarSystem;
 import it.unical.utils.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 
 public class StarSystemView {
     private StarSystem system;
@@ -15,9 +13,9 @@ public class StarSystemView {
     private static final Font SYSTEM_FONT = new Font("Arial", Font.BOLD, 12);
     private static final Font SHIPS_FONT = new Font("Arial", Font.PLAIN, 10);
 
-    private static BufferedImage neutralStarImage;
-    private static BufferedImage playerStarImage;
-    private static BufferedImage aiStarImage;
+    private static final BufferedImage neutralStarImage;
+    private static final BufferedImage playerStarImage;
+    private static final BufferedImage aiStarImage;
 
     static {
         neutralStarImage = ResourceLoader.loadImage("images/star.png"); // Replace with actual path
@@ -45,10 +43,30 @@ public class StarSystemView {
         // Draw the star system image
         g2d.drawImage(starImage, position.x - SYSTEM_RADIUS, position.y - SYSTEM_RADIUS,
                 SYSTEM_RADIUS * 2, SYSTEM_RADIUS * 2, null);
+        
+        if(system.isAutomated()) {
+            double dx = system.getAutomatedTo().getPosition().x - system.getPosition().x;
+            double dy = system.getAutomatedTo().getPosition().y - system.getPosition().y;
+            double angle = Math.atan2(dy, dx);
+
+            AffineTransform oldTransform = g2d.getTransform();
+            g2d.translate(position.x, position.y);
+            g2d.rotate(angle);
+// Triangolo con punta verso destra
+            int tri = 20;
+            int[] xP = { SYSTEM_RADIUS + tri, SYSTEM_RADIUS, SYSTEM_RADIUS};
+            int[] yP = { 0, -tri/2, tri/2};
+            g2d.setColor(Color.BLUE);
+            g2d.fillPolygon(xP, yP, 3);
+
+// Restore the transformation
+            g2d.setTransform(oldTransform);
+        }
 
         // Draw the name of the system
         g2d.setFont(SYSTEM_FONT);
         int nameWidth = g2d.getFontMetrics().stringWidth(system.getName());
+        g2d.setColor(system.getOwner()==null ? Color.WHITE : system.getOwner().getColor());
         g2d.drawString(system.getName(), position.x - nameWidth / 2, position.y - SYSTEM_RADIUS - 5);
 
         // Draw the number of ships

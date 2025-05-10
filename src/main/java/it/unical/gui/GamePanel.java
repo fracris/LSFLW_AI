@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.util.ArrayList;
 
 public class GamePanel extends JPanel {
     private GameController gameController;
@@ -141,7 +142,10 @@ public class GamePanel extends JPanel {
     private void drawFleets(Graphics2D g2d) {
         GameMap gameMap = gameController.getGameState().getGameMap();
 
-        for (Fleet fleet : gameMap.getFleets()) {
+        // Crea una copia della lista di flotte per evitare modifiche concorrenti
+        ArrayList<Fleet> fleetListCopy = new ArrayList<>(gameMap.getFleets());
+
+        for (Fleet fleet : fleetListCopy) {
             FleetView fleetView = new FleetView(fleet);
             fleetView.draw(g2d);
         }

@@ -59,8 +59,8 @@ public class GameState {
         for (int i = 0; i < numPlayers; i++) {
             Player player = players.get(i);
 
-            // Cerca di prendere sistemi distanti tra loro per ogni giocatore
-            int startIdx = (systems.size() / numPlayers) * i;
+
+            int startIdx = (systems.size() / numPlayers) * 2 * i+(i*-1);
             for (int j = 0; j < systemsPerPlayer; j++) {
                 int idx = startIdx % systems.size();
                 StarSystem system = systems.get(idx);

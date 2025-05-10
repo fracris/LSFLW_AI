@@ -174,9 +174,9 @@ public class GameMap {
     // Gestisce l'arrivo di una flotta a destinazione
     private void handleFleetArrival(Fleet fleet) {
         StarSystem destination = fleet.getDestination();
-        Player attacker       = fleet.getOwner();
-        Player defender       = destination.getOwner();
-        int fleetShips        = fleet.getShips();
+        Player attacker = fleet.getOwner();
+        Player defender = destination.getOwner();
+        int fleetShips = fleet.getShips();
 
         if (defender == null || defender == attacker) {
             // Sistema neutrale o amico
@@ -191,6 +191,10 @@ public class GameMap {
             if (fleetShips > defendingShips) {
                 // Conquista
                 defender.removeSystem(destination);
+                if(destination.isAutomated()) {
+                    destination.setAutomated(false);
+                    destination.setAutomatedTo(null);
+                }
                 attacker.addSystem(destination);
                 destination.setShips(fleetShips - defendingShips);
             } else {

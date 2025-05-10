@@ -7,6 +7,7 @@ import it.unical.model.*;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public class GameController {
     private Map<Player, AIPlayer> aiPlayers;
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
-
+    private int sendPerc = 100;
 
     public GameController() {
 
@@ -36,6 +37,14 @@ public class GameController {
 
         // Inizializza il timer di gioco
         gameTimer = new Timer(UPDATE_RATE, e -> update());
+    }
+
+    public int getSendPerc() {
+        return sendPerc;
+    }
+
+    public void setSendPerc(int sendPerc) {
+        this.sendPerc = sendPerc;
     }
 
     public void setGameState(GameState gameState) {

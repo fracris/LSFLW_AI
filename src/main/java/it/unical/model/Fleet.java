@@ -1,6 +1,6 @@
 package it.unical.model;
 
-import java.awt.Color;
+import java.awt.*;
 
 public class Fleet {
     private int id;
@@ -35,7 +35,7 @@ public class Fleet {
     }
 
     // Calcola la posizione attuale della flotta (interpolazione)
-    public java.awt.Point getCurrentPosition() {
+    public Point getCurrentPosition() {
         int x1 = source.getPosition().x;
         int y1 = source.getPosition().y;
         int x2 = destination.getPosition().x;
@@ -44,7 +44,7 @@ public class Fleet {
         int x = (int) (x1 + (x2 - x1) * progress);
         int y = (int) (y1 + (y2 - y1) * progress);
 
-        return new java.awt.Point(x, y);
+        return new Point(x, y);
     }
 
     // Getters e setters
