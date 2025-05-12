@@ -62,7 +62,7 @@ public class ControlPanel extends JPanel implements ActionListener {
         StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
 
         if (selectedSystem!=null && targetSystem != null && selectedSystem.getShips()>0) {
-            int ships = selectedSystem.getShips();
+            int ships = selectedSystem.getShips()*gameController.getSendPerc()/100;
             gameController.sendFleet(selectedSystem, targetSystem, ships);
 
             // Reimposta la selezione

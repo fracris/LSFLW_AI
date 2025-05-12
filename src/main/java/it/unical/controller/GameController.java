@@ -56,27 +56,15 @@ public class GameController {
 
     // Inizializza e avvia il gioco
     public void initGame() {
-        int systems = 20;
-        int players = 2;
         boolean withAI = true;
-
-        // Adatta la difficoltà
-        switch (difficulty.toLowerCase()) {
-            case "facile":
-                systems = 15;
-                break;
-            case "medio":
-                systems = 25;
-                break;
-            case "difficile":
-                systems = 35;
-                break;
-            default:
-                System.err.println("Livello sconosciuto, uso configurazione di default.");
-        }
+        int numSystem = switch (difficulty.toLowerCase()) {
+            case "facile" -> 10;
+            case "medio" -> 20;
+            default -> 30;
+        };
 
         // Inizializza lo stato di gioco con i parametri del livello
-        gameState.initGame(systems, players, withAI);
+        gameState.initGame(difficulty.toLowerCase(), numSystem, withAI);
 
         // Crea gli AIPlayer per ogni giocatore IA
         List<Player> aiPlayers = gameState.getAiPlayers();

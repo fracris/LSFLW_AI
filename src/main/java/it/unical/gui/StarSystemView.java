@@ -52,14 +52,14 @@ public class StarSystemView {
             AffineTransform oldTransform = g2d.getTransform();
             g2d.translate(position.x, position.y);
             g2d.rotate(angle);
-// Triangolo con punta verso destra
+            // Triangolo con punta verso destra
             int tri = 20;
             int[] xP = { SYSTEM_RADIUS + tri, SYSTEM_RADIUS, SYSTEM_RADIUS};
             int[] yP = { 0, -tri/2, tri/2};
             g2d.setColor(Color.BLUE);
             g2d.fillPolygon(xP, yP, 3);
 
-// Restore the transformation
+            // Restore the transformation
             g2d.setTransform(oldTransform);
         }
 

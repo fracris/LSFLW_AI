@@ -20,13 +20,26 @@ public class GameState {
     }
 
     // Inizializza una nuova partita
-    public void initGame(int numSystems, int numPlayers, boolean withAI) {
+    public void initGame(String difficulty, int numSystem, boolean withAI) {
         // Genera la mappa
-        gameMap.generateRandomMap(numSystems, 100);
-
+        gameMap.generateMap(numSystem, difficulty);
+        Color[] playerColors;
         // Crea i giocatori
         players.clear();
-        Color[] playerColors = {Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW};
+        int numPlayers;
+
+        if(difficulty.equals("facile")){
+            numPlayers=2;
+            playerColors= new Color[]{Color.BLUE, Color.RED};
+        }
+        else if(difficulty.equals("medio")){
+            numPlayers=3;
+            playerColors= new Color[]{Color.BLUE, Color.RED, Color.GREEN};
+        }
+        else {
+            numPlayers=4;
+            playerColors= new Color[]{Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW};
+        }
 
         for (int i = 0; i < numPlayers; i++) {
             boolean isAI = (i > 0 && withAI); // Solo il primo giocatore è umano se withAI è true
@@ -58,7 +71,6 @@ public class GameState {
 
         for (int i = 0; i < numPlayers; i++) {
             Player player = players.get(i);
-
 
             int startIdx = (systems.size() / numPlayers) * 2 * i+(i*-1);
             for (int j = 0; j < systemsPerPlayer; j++) {
