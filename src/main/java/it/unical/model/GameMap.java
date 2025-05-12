@@ -16,39 +16,38 @@ public class GameMap {
     }
 
     // Crea una mappa casuale con un dato numero di sistemi
-    public void generateRandomMap(int numSystems, int minDistance) {
-        Random rand = new Random();
+    public void generateMap(int numSystem, String difficulty) {
         systems.clear();
 
-        for (int i = 0; i < numSystems; i++) {
-            boolean validPosition = false;
-            Point position = null;
+        StarSystem newSystem;
 
-            // Trova una posizione valida per il nuovo sistema stellare
-            while (!validPosition) {
-                int x = rand.nextInt(mapSize.width - 100) + 50;
-                int y = rand.nextInt(mapSize.height - 100) + 50;
-                position = new Point(x, y);
-
-                validPosition = true;
-                // Controlla che sia abbastanza distante dagli altri sistemi
-                for (StarSystem system : systems) {
-                    if (position.distance(system.getPosition()) < minDistance) {
-                        validPosition = false;
-                        break;
-                    }
-                }
+        if (difficulty.equals("facile")) {
+            Point[] positions = {
+                    new Point(200,(mapSize.height-30)/2),
+                    new Point(300,(mapSize.height-30)/2-100),
+                    new Point(300,(mapSize.height-30)/2+100),
+                    new Point(320,(mapSize.height-30)/2),
+                    new Point(400,(mapSize.height-30)/2-100),
+                    new Point(400,(mapSize.height-30)/2+100),
+                    new Point(480,(mapSize.height-30)/2),
+                    new Point(500,(mapSize.height-30)/2-100),
+                    new Point(500,(mapSize.height-30)/2+100),
+                    new Point(600,(mapSize.height-30)/2),
+            };
+            for(int i = 0; i < numSystem; i++) {
+                newSystem = new StarSystem(i, "Sistema " + i, positions[i], 5);
+                systems.add(newSystem);
             }
-
-            // Crea il nuovo sistema con un tasso di produzione casuale (1-5)
-            StarSystem newSystem = new StarSystem(
-                    i,
-                    "Sistema " + (i + 1),
-                    position,
-                    rand.nextInt(5) + 1
-            );
-
-            systems.add(newSystem);
+        } else if (difficulty.equals("medio")) {
+            for(int i = 0; i < numSystem; i++) {
+                newSystem = new StarSystem(i, "Sistema " + i, new Point(mapSize.width / 2, mapSize.height / 2+(i*100)), 5);
+                systems.add(newSystem);
+            }
+        } else {
+            for(int i = 0; i < numSystem; i++) {
+                newSystem = new StarSystem(i, "Sistema " + i, new Point(mapSize.width / 2+(i*100), mapSize.height / 2+(i*100)), 5);
+                systems.add(newSystem);
+            }
         }
 
         // Crea connessioni tra i sistemi (costruisce il grafo)
@@ -85,7 +84,7 @@ public class GameMap {
 
 // Una volta garantita la connessione di tutti i sistemi, aggiungi connessioni aggiuntive per varietà
         for (StarSystem system : systems) {
-            List<StarSystem> nearest = findNearestSystems(system, 3);
+            List<StarSystem> nearest = findNearestSystems(system, 1);
             for (StarSystem nearby : nearest) {
                 system.connectTo(nearby);
             }
