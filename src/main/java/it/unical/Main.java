@@ -2,51 +2,40 @@ package it.unical;
 
 import it.unical.controller.GameController;
 import it.unical.gui.GameFrame;
+import it.unical.gui.MainMenuFrame;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import java.io.File;
 
 public class Main {
     public static void main(String[] args) {
-
-
-        // Imposta il look and feel del sistema operativo
+        // Imposta look & feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        // Avvia il gioco nell'Event Dispatch Thread
+        // Avvia GUI con il menu principale
         SwingUtilities.invokeLater(() -> {
-            try {
-                System.out.println("=== Little Stars for Little Wars ===");
-                System.out.println("Avvio del gioco...");
+            new MainMenuFrame();
+        });
+    }
 
-                // IMPORTANTE: Cambia l'ordine di inizializzazione
-                // 1. Crea il controller di gioco
-                GameController gameController = new GameController();
+    /**
+     * Avvia il gioco con il livello selezionato.
+     */
+    public static void startGame(String level) {
+        SwingUtilities.invokeLater(() -> {
+            System.out.println("=== Little Stars for Little Wars ===");
+            System.out.println("Livello scelto: " + level);
+            System.out.println("Avvio del gioco...");
 
-                // 2. Inizializza il gioco (genera la mappa)
-                System.out.println("Inizializzazione del gioco...");
-                gameController.initGame();
+            GameController gameController = new GameController(level);
+            gameController.initGame();
 
-                // 3. Crea la finestra di gioco (dopo aver inizializzato il gioco)
-                System.out.println("Creazione dell'interfaccia grafica...");
-                GameFrame gameFrame = new GameFrame("Little Stars for Little Wars", gameController);
-
-                // 4. Aggiorna le viste dei sistemi
-                gameFrame.getGamePanel().updateSystemViews();
-
-                // 5. Mostra la finestra
-                gameFrame.setVisible(true);
-                System.out.println("Gioco avviato con successo!");
-
-            } catch (Exception e) {
-                System.err.println("Errore nell'avvio del gioco: " + e.getMessage());
-                e.printStackTrace();
-            }
+            GameFrame gameFrame = new GameFrame("Little Stars for Little Wars - " + level, gameController);
+            gameFrame.getGamePanel().updateSystemViews();
+            // GameFrame già rende visibile nel setGameFrame
         });
     }
 }

@@ -5,9 +5,6 @@ import it.unical.gui.GamePanel;
 import it.unical.model.*;
 
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +20,10 @@ public class GameController {
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
     private int sendPerc = 100;
+    private String difficulty;
 
-    public GameController() {
+    public GameController(String difficulty) {
+        this.difficulty = difficulty;
 
         // Crea lo stato di gioco
         gameState = new GameState(new Dimension(1600, 900));
@@ -57,8 +56,27 @@ public class GameController {
 
     // Inizializza e avvia il gioco
     public void initGame() {
-        // Inizializza lo stato di gioco
-        gameState.initGame(20, 2, true); // 20 sistemi, 2 giocatori, con IA
+        int systems = 20;
+        int players = 2;
+        boolean withAI = true;
+
+        // Adatta la difficoltà
+        switch (difficulty.toLowerCase()) {
+            case "facile":
+                systems = 15;
+                break;
+            case "medio":
+                systems = 25;
+                break;
+            case "difficile":
+                systems = 35;
+                break;
+            default:
+                System.err.println("Livello sconosciuto, uso configurazione di default.");
+        }
+
+        // Inizializza lo stato di gioco con i parametri del livello
+        gameState.initGame(systems, players, withAI);
 
         // Crea gli AIPlayer per ogni giocatore IA
         List<Player> aiPlayers = gameState.getAiPlayers();
@@ -79,7 +97,9 @@ public class GameController {
 
     public void setGameFrame(GameFrame gameFrame) {
         this.gameFrame = gameFrame;
-
+        if (this.gameFrame != null) {
+            this.gameFrame.setVisible(true);
+        }
     }
 
     private void update() {
@@ -140,5 +160,9 @@ public class GameController {
 
     public InputController getInputController() {
         return inputController;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
     }
 }
