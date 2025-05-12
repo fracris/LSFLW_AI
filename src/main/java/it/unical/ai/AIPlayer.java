@@ -1,4 +1,4 @@
-package it.unical.model;
+package it.unical.ai;
 
 import java.io.File;
 import java.util.*;
@@ -11,6 +11,10 @@ import it.unical.mat.embasp.base.Output;
 import it.unical.mat.embasp.languages.asp.ASPInputProgram;
 import it.unical.mat.embasp.platforms.desktop.DesktopHandler;
 import it.unical.mat.embasp.specializations.dlv2.desktop.DLV2DesktopService;
+import it.unical.model.Fleet;
+import it.unical.model.GameState;
+import it.unical.model.Player;
+import it.unical.model.StarSystem;
 
 public class AIPlayer {
     private Player player;
