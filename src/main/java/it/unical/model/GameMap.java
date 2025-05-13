@@ -121,23 +121,6 @@ public class GameMap {
         fleets.remove(fleet);
     }
 
-    // Aggiorna lo stato di tutte le flotte
-    public void updateFleets(double deltaTime) {
-        List<Fleet> arrivedFleets = new ArrayList<>();
-
-        for (Fleet fleet : fleets) {
-            fleet.update(deltaTime);
-
-            if (fleet.hasArrived()) {
-                arrivedFleets.add(fleet);
-            }
-        }
-
-        // Gestisce le flotte arrivate
-        for (Fleet fleet : arrivedFleets) {
-            handleFleetArrival(fleet);
-        }
-    }
 
 //    // Gestisce l'arrivo di una flotta a destinazione
 //    private void handleFleetArrival(Fleet fleet) {
@@ -206,6 +189,114 @@ public class GameMap {
         attacker.removeFleet(fleet);
         fleets.remove(fleet);
     }
+
+
+    // Aggiorna lo stato di tutte le flotte
+    public void updateFleets(double deltaTime) {
+        List<Fleet> arrivedFleets = new ArrayList<>();
+
+        // Aggiorna la posizione di tutte le flotte
+        for (Fleet fleet : fleets) {
+            fleet.update(deltaTime);
+
+            if (fleet.hasArrived()) {
+                arrivedFleets.add(fleet);
+            }
+        }
+
+        // Controlla le collisioni tra flotte
+        checkFleetCollisions();
+
+        // Gestisce le flotte arrivate
+        for (Fleet fleet : arrivedFleets) {
+            if (fleets.contains(fleet)) { // Verifica che la flotta non sia stata distrutta in una collisione
+                handleFleetArrival(fleet);
+            }
+        }
+    }
+
+    // Nuovo metodo per controllare le collisioni tra flotte
+    private void checkFleetCollisions() {
+        List<Fleet> fleetsToRemove = new ArrayList<>();
+
+        // Controlla ogni coppia di flotte per possibili collisioni
+        for (int i = 0; i < fleets.size(); i++) {
+            Fleet fleet1 = fleets.get(i);
+            if (fleetsToRemove.contains(fleet1)) continue;
+
+            for (int j = i + 1; j < fleets.size(); j++) {
+                Fleet fleet2 = fleets.get(j);
+                if (fleetsToRemove.contains(fleet2)) continue;
+
+                // Verifica se le flotte sono di giocatori diversi
+                if (fleet1.getOwner() != fleet2.getOwner()) {
+                    // Verifica se sono sulla stessa connessione (stessa strada)
+                    if (areOnSameConnection(fleet1, fleet2)) {
+                        // Verifica se si scontrano (si incrociano o si sovrappongono)
+                        if (areColliding(fleet1, fleet2)) {
+                            // Risolvi la collisione
+                            resolveCollision(fleet1, fleet2, fleetsToRemove);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Rimuovi le flotte distrutte
+        for (Fleet fleet : fleetsToRemove) {
+            Player owner = fleet.getOwner();
+            owner.removeFleet(fleet);
+            fleets.remove(fleet);
+        }
+    }
+
+    // Controlla se due flotte sono sulla stessa connessione
+    private boolean areOnSameConnection(Fleet fleet1, Fleet fleet2) {
+        StarSystem src1 = fleet1.getSource();
+        StarSystem dst1 = fleet1.getDestination();
+        StarSystem src2 = fleet2.getSource();
+        StarSystem dst2 = fleet2.getDestination();
+
+        // Sono sulla stessa connessione se condividono gli stessi sistemi (in qualsiasi ordine)
+        return (src1 == src2 && dst1 == dst2) || (src1 == dst2 && dst1 == src2);
+    }
+
+    // Controlla se due flotte si scontrano (incrociano o sovrappongono)
+    private boolean areColliding(Fleet fleet1, Fleet fleet2) {
+        double progress1 = fleet1.getProgress();
+        double progress2 = fleet2.getProgress();
+
+        // Se le flotte viaggiano nella stessa direzione
+        if (fleet1.getSource() == fleet2.getSource()) {
+            // Collisione se la distanza tra i progressi è molto piccola
+            return Math.abs(progress1 - progress2) < 0.05;
+        } else {
+            // Se viaggiano in direzioni opposte, collisione se i progressi sommati superano 1
+            return progress1 + progress2 >= 1.0 && Math.abs(progress1 + progress2 - 1.0) < 0.05;
+        }
+    }
+
+    // Risolve la collisione tra due flotte
+    private void resolveCollision(Fleet fleet1, Fleet fleet2, List<Fleet> fleetsToRemove) {
+        int ships1 = fleet1.getShips();
+        int ships2 = fleet2.getShips();
+
+        if (ships1 > ships2) {
+            // Fleet1 vince
+            // Sottrai il numero di navi della flotta sconfitta a quella vincente
+            fleet1.setShips(ships1 - ships2);
+            fleetsToRemove.add(fleet2);
+        } else if (ships2 > ships1) {
+            // Fleet2 vince
+            fleet2.setShips(ships2 - ships1);
+            fleetsToRemove.add(fleet1);
+        } else {
+            // Pareggio: entrambe le flotte si distruggono a vicenda
+            fleetsToRemove.add(fleet1);
+            fleetsToRemove.add(fleet2);
+        }
+    }
+
 
     // Getters
     public List<StarSystem> getSystems() { return systems; }
