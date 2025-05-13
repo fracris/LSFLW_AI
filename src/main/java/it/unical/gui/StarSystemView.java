@@ -17,6 +17,19 @@ public class StarSystemView {
     private static final BufferedImage playerStarImage;
     private static final BufferedImage aiStarImage;
 
+    // Aggiungi questi campi alla classe StarSystem
+    private int sendMode = 100; // Default: 100%
+
+    // Aggiungi questo metodo getter e setter alla classe StarSystem
+    public int getSendMode() {
+        return sendMode;
+    }
+
+    public void setSendMode(int sendMode) {
+        this.sendMode = sendMode;
+    }
+
+
     static {
         neutralStarImage = ResourceLoader.loadImage("images/star.png"); // Replace with actual path
         playerStarImage = ResourceLoader.loadImage("images/blue_star.png"); // Replace with actual path

@@ -39,6 +39,21 @@ public class GameController {
         gameTimer = new Timer(UPDATE_RATE, e -> update());
     }
 
+
+
+
+    // Modifica il metodo sendFleet se necessario per assicurarti che rimanga sempre almeno una nave
+    public void sendFleet(StarSystem source, StarSystem target, int ships) {
+        // Assicurati di mantenere almeno una nave nel sistema di origine
+        int shipsToSend = Math.min(ships, source.getShips() - 1);
+
+        if (shipsToSend > 0) {
+            Player humanPlayer = gameState.getHumanPlayer();
+            gameState.sendFleet(humanPlayer, source, target, shipsToSend);
+        }
+    }
+
+
     public int getSendPerc() {
         return sendPerc;
     }
@@ -142,11 +157,11 @@ public class GameController {
         }
     }
 
-    // Invia una flotta da un sistema a un altro (per il giocatore umano)
-    public void sendFleet(StarSystem source, StarSystem target, int ships) {
-        Player humanPlayer = gameState.getHumanPlayer();
-        gameState.sendFleet(humanPlayer, source, target, ships);
-    }
+//    // Invia una flotta da un sistema a un altro (per il giocatore umano)
+//    public void sendFleet(StarSystem source, StarSystem target, int ships) {
+//        Player humanPlayer = gameState.getHumanPlayer();
+//        gameState.sendFleet(humanPlayer, source, target, ships);
+//    }
 
     // Getters
     public GameState getGameState() {

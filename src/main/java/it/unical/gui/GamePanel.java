@@ -57,15 +57,7 @@ public class GamePanel extends JPanel {
         }
     }
 
-    // Disegna lo sfondo con stelle random inizializzate una sola volta
-    private void drawBackground(Graphics2D g2d) {
-        g2d.setColor(Color.WHITE);
-        for (int i = 0; i < starPositions.length; i++) {
-            Point position = starPositions[i];
-            int size = starSizes[i];
-            g2d.fillOval(position.x, position.y, size, size);
-        }
-    }
+
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -79,8 +71,7 @@ public class GamePanel extends JPanel {
         g2d.translate(viewPosition.x, viewPosition.y);
         g2d.scale(scale, scale);
 
-        // Disegna lo sfondo dello spazio (stelle casuali)
-        //drawBackground(g2d);
+
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);

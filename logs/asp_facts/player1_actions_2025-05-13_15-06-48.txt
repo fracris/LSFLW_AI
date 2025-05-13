@@ -1,0 +1,9 @@
+% Azioni eseguite da Giocatore 2 (ID: 1)
+% Data: Tue May 13 15:06:48 GMT+01:00 2025
+
+send_fleet(7,6,114)
+send_fleet(8,6,133)
+send_fleet(9,6,151)
+send_fleet(7,4,325)
+send_fleet(8,5,363)
+send_fleet(9,2,400)

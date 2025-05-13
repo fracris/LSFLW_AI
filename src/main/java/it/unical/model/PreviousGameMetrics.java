@@ -1,0 +1,117 @@
+package it.unical.model;
+
+public class PreviousGameMetrics {
+    private int mySystemCount;
+    private int enemySystemCount;
+    private int neutralSystemCount;
+    private int myShipsTotal;
+    private int enemyShipsTotal;
+
+    // Costruttore con valori predefiniti
+    public PreviousGameMetrics() {
+        // Valori predefiniti come nel metodo getDefaultPreviousMetrics()
+        this.mySystemCount = 1;
+        this.enemySystemCount = 1;
+        this.neutralSystemCount = 8;
+        this.myShipsTotal = 110;
+        this.enemyShipsTotal = 110;
+    }
+
+    // Costruttore completo
+    public PreviousGameMetrics(int mySystemCount, int enemySystemCount, int neutralSystemCount,
+                               int myShipsTotal, int enemyShipsTotal) {
+        this.mySystemCount = mySystemCount;
+        this.enemySystemCount = enemySystemCount;
+        this.neutralSystemCount = neutralSystemCount;
+        this.myShipsTotal = myShipsTotal;
+        this.enemyShipsTotal = enemyShipsTotal;
+    }
+
+    // Getter e setter
+    public int getMySystemCount() {
+        return mySystemCount;
+    }
+
+    public void setMySystemCount(int mySystemCount) {
+        this.mySystemCount = mySystemCount;
+    }
+
+    public int getEnemySystemCount() {
+        return enemySystemCount;
+    }
+
+    public void setEnemySystemCount(int enemySystemCount) {
+        this.enemySystemCount = enemySystemCount;
+    }
+
+    public int getNeutralSystemCount() {
+        return neutralSystemCount;
+    }
+
+    public void setNeutralSystemCount(int neutralSystemCount) {
+        this.neutralSystemCount = neutralSystemCount;
+    }
+
+    public int getMyShipsTotal() {
+        return myShipsTotal;
+    }
+
+    public void setMyShipsTotal(int myShipsTotal) {
+        this.myShipsTotal = myShipsTotal;
+    }
+
+    public int getEnemyShipsTotal() {
+        return enemyShipsTotal;
+    }
+
+    public void setEnemyShipsTotal(int enemyShipsTotal) {
+        this.enemyShipsTotal = enemyShipsTotal;
+    }
+
+    // Metodo per convertire i dati in formato ASP
+    public String toAspFacts() {
+        StringBuilder facts = new StringBuilder();
+        facts.append("previous_my_system_count(").append(mySystemCount).append(").\n");
+        facts.append("previous_enemy_system_count(").append(enemySystemCount).append(").\n");
+        facts.append("previous_neutral_system_count(").append(neutralSystemCount).append(").\n");
+        facts.append("previous_my_ships_total(").append(myShipsTotal).append(").\n");
+        facts.append("previous_enemy_ships_total(").append(enemyShipsTotal).append(").\n");
+        return facts.toString();
+    }
+
+    // Metodo per aggiornare le metriche dal game state attuale
+    public void updateFromGameState(GameState gameState, Player player) {
+        int mySystemCount = 0;
+        int enemySystemCount = 0;
+        int neutralSystemCount = 0;
+        int myShipsTotal = 0;
+        int enemyShipsTotal = 0;
+
+        for (StarSystem system : gameState.getGameMap().getSystems()) {
+            if (system.getOwner() == null) {
+                neutralSystemCount++;
+            } else if (system.getOwner().getId() == player.getId()) {
+                mySystemCount++;
+                myShipsTotal += system.getShips();
+            } else {
+                enemySystemCount++;
+                enemyShipsTotal += system.getShips();
+            }
+        }
+
+        // Aggiungi anche le navi nelle flotte
+        for (Fleet fleet : gameState.getGameMap().getFleets()) {
+            if (fleet.getOwner().getId() == player.getId()) {
+                myShipsTotal += fleet.getShips();
+            } else {
+                enemyShipsTotal += fleet.getShips();
+            }
+        }
+
+        this.mySystemCount = mySystemCount;
+        this.enemySystemCount = enemySystemCount;
+        this.neutralSystemCount = neutralSystemCount;
+        this.myShipsTotal = myShipsTotal;
+        this.enemyShipsTotal = enemyShipsTotal;
+    }
+}
