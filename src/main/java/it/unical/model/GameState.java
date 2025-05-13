@@ -48,7 +48,7 @@ public class GameState {
         }
 
         // Assegna sistemi iniziali
-        assignInitialSystems();
+        assignInitialSystems(difficulty);
 
         // Reset stato di vittoria
         gameOver = false;
@@ -63,25 +63,24 @@ public class GameState {
         return null;
     }
     // Assegna i sistemi iniziali ai giocatori
-    private void assignInitialSystems() {
+    private void assignInitialSystems(String difficulty) {
         List<StarSystem> systems = gameMap.getSystems();
         int numPlayers = players.size();
 
-        int systemsPerPlayer = 1;
-
-        for (int i = 0; i < numPlayers; i++) {
-            Player player = players.get(i);
-
-            int startIdx = (systems.size() / numPlayers) * 2 * i+(i*-1);
-            for (int j = 0; j < systemsPerPlayer; j++) {
-                int idx = startIdx % systems.size();
-                StarSystem system = systems.get(idx);
-
-                // Assegna il sistema al giocatore
-                player.addSystem(system);
-
-                // Aggiungi delle navi iniziali
-                system.addShips(10);
+        players.get(0).addSystem(systems.get(0));
+        players.get(1).addSystem(systems.get(systems.size() - 1));
+        if (numPlayers > 2) {
+            if(difficulty.equals("medio")){
+                players.get(2).addSystem(systems.get(17));
+            } else {
+                players.get(2).addSystem(systems.get(1));
+            }
+        }
+        if (numPlayers > 3) {
+            if(difficulty.equals("medio")){
+                players.get(3).addSystem(systems.get(systems.size() / 4));
+            } else {
+                players.get(3).addSystem(systems.get(28));
             }
         }
     }
@@ -113,7 +112,7 @@ public class GameState {
     private void checkGameOver() {
         List<Player> active = new ArrayList<>();
         for (Player p : players) {
-            if (!p.getOwnedSystems().isEmpty()) {
+            if (!p.getOwnedSystems().isEmpty() || !p.getFleets().isEmpty()) {
                 active.add(p);
             }
         }

@@ -20,96 +20,153 @@ public class GameMap {
         systems.clear();
 
         StarSystem newSystem;
+        Point[] positions;
+        int[] productionRates;
 
         if (difficulty.equals("facile")) {
-            Point[] positions = {
-                    new Point(200,(mapSize.height-30)/2),
-                    new Point(300,(mapSize.height-30)/2-100),
-                    new Point(300,(mapSize.height-30)/2+100),
-                    new Point(320,(mapSize.height-30)/2),
-                    new Point(400,(mapSize.height-30)/2-100),
-                    new Point(400,(mapSize.height-30)/2+100),
-                    new Point(480,(mapSize.height-30)/2),
-                    new Point(500,(mapSize.height-30)/2-100),
-                    new Point(500,(mapSize.height-30)/2+100),
-                    new Point(600,(mapSize.height-30)/2),
+            positions = new Point[]{
+                    new Point(200, (mapSize.height - 30) / 2),
+                    new Point(300, (mapSize.height - 30) / 2 - 100),
+                    new Point(300, (mapSize.height - 30) / 2 + 100),
+                    new Point(320, (mapSize.height - 30) / 2),
+                    new Point(400, (mapSize.height - 30) / 2 - 100),
+                    new Point(400, (mapSize.height - 30) / 2 + 100),
+                    new Point(480, (mapSize.height - 30) / 2),
+                    new Point(500, (mapSize.height - 30) / 2 - 100),
+                    new Point(500, (mapSize.height - 30) / 2 + 100),
+                    new Point(600, (mapSize.height - 30) / 2),
             };
-            for(int i = 0; i < numSystem; i++) {
-                newSystem = new StarSystem(i, "Sistema " + i, positions[i], 5);
-                systems.add(newSystem);
-            }
+            productionRates= new int[]{2, 1, 1, 3, 2, 2, 3, 1, 1, 1};
         } else if (difficulty.equals("medio")) {
-            for(int i = 0; i < numSystem; i++) {
-                newSystem = new StarSystem(i, "Sistema " + i, new Point(mapSize.width / 2, mapSize.height / 2+(i*100)), 5);
-                systems.add(newSystem);
-            }
+            positions = new Point[]{
+                    new Point(200, (mapSize.height - 30) / 2),
+                    new Point(200, (mapSize.height - 30) / 2 - 200),
+                    new Point(200, (mapSize.height - 30) / 2 + 100),
+                    new Point(300, (mapSize.height - 30) / 2 - 100),
+                    new Point(300, (mapSize.height - 30) / 2),
+                    new Point(300, (mapSize.height - 30) / 2 + 100),
+                    new Point(400, (mapSize.height - 30) / 2 - 200),
+                    new Point(400, (mapSize.height - 30) / 2 - 100),
+                    new Point(400, (mapSize.height - 30) / 2),
+                    new Point(400, (mapSize.height - 30) / 2 + 100),
+                    new Point(500, (mapSize.height - 30) / 2 - 200),
+                    new Point(500, (mapSize.height - 30) / 2 - 100),
+                    new Point(500, (mapSize.height - 30) / 2),
+                    new Point(500, (mapSize.height - 30) / 2 + 100),
+                    new Point(600, (mapSize.height - 30) / 2 - 200),
+                    new Point(600, (mapSize.height - 30) / 2 - 100),
+                    new Point(600, (mapSize.height - 30) / 2),
+                    new Point(700, (mapSize.height - 30) / 2 - 200),
+                    new Point(700, (mapSize.height - 30) / 2),
+                    new Point(700, (mapSize.height - 30) / 2 + 100),
+            };
+            productionRates= new int[]{2,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1};
         } else {
-            for(int i = 0; i < numSystem; i++) {
-                newSystem = new StarSystem(i, "Sistema " + i, new Point(mapSize.width / 2+(i*100), mapSize.height / 2+(i*100)), 5);
-                systems.add(newSystem);
-            }
+            positions = new Point[]{
+                    new Point(100, 100), new Point(100, 500),
+
+                    new Point(200, 150), new Point(200, 250), new Point(200, 350), new Point(200, 450),
+                    new Point(300, 150), new Point(300, 250), new Point(300, 350), new Point(300, 450),
+                    new Point(350, 200), new Point(350, 300), new Point(350, 400),
+                    new Point(400, 150), new Point(400, 250), new Point(400, 350), new Point(400, 450),
+                    new Point(450, 200), new Point(450, 300), new Point(450, 400),
+                    new Point(500, 150), new Point(500, 250), new Point(500, 350), new Point(500, 450),
+                    new Point(600, 150), new Point(600, 250), new Point(600, 350), new Point(600, 450),
+                    new Point(700, 100), new Point(700, 500),
+            };
+            productionRates = new int[]{
+                    3, 3, 1, 1, 1,
+                    1, 1, 2, 2, 1,
+                    2, 5, 2, 1, 5,
+                    5, 1, 2, 5, 2,
+                    1, 2, 2, 1, 1,
+                    1, 1, 1, 3, 3
+            };
         }
 
-        // Crea connessioni tra i sistemi (costruisce il grafo)
-        createConnections();
+        for(int i = 0; i < numSystem; i++) {
+            newSystem = new StarSystem(i, "Sistema " + i, positions[i], productionRates[i]);
+            systems.add(newSystem);
+        }
+
+        createConnections(difficulty);
     }
 
     // Crea connessioni tra i sistemi stellari
-    private void createConnections() {
-
-// Crea connessioni tra i sistemi stellari in modo da garantire che tutti i sistemi siano collegati in un unico grafo connesso
-        Set<StarSystem> connected = new HashSet<>();
-        Queue<StarSystem> toConnect = new LinkedList<>();
-
-// Inizializza con il primo sistema
-        connected.add(systems.get(0));
-        toConnect.add(systems.get(0));
-
-// Collega iterativamente i sistemi finché non sono tutti parte dello stesso grafo
-        while (connected.size() < systems.size()) {
-            StarSystem current = toConnect.poll();
-
-            // Trova i sistemi non ancora collegati più vicini a 'current'
-            List<StarSystem> nearest = findNearestSystems(current, systems.size());
-            for (StarSystem system : nearest) {
-                if (!connected.contains(system)) {
-                    // Collega i due sistemi
-                    current.connectTo(system);
-                    connected.add(system);
-                    toConnect.add(system);
-                    break; // Collega un sistema alla volta per evitare cicli
-                }
-            }
-        }
-
-// Una volta garantita la connessione di tutti i sistemi, aggiungi connessioni aggiuntive per varietà
-        for (StarSystem system : systems) {
-            List<StarSystem> nearest = findNearestSystems(system, 1);
-            for (StarSystem nearby : nearest) {
-                system.connectTo(nearby);
-            }
+    private void createConnections(String difficulty) {
+        if (difficulty.equals("facile")) {
+            systems.get(0).connectTo(systems.get(1));
+            systems.get(0).connectTo(systems.get(2));
+            systems.get(0).connectTo(systems.get(3));
+            systems.get(1).connectTo(systems.get(4));
+            systems.get(2).connectTo(systems.get(5));
+            systems.get(3).connectTo(systems.get(6));
+            systems.get(4).connectTo(systems.get(7));
+            systems.get(5).connectTo(systems.get(8));
+            systems.get(6).connectTo(systems.get(9));
+            systems.get(7).connectTo(systems.get(9));
+            systems.get(8).connectTo(systems.get(9));
+        } else if (difficulty.equals("medio")) {
+            systems.get(0).connectTo(systems.get(1));
+            systems.get(0).connectTo(systems.get(3));
+            systems.get(1).connectTo(systems.get(3));
+            systems.get(2).connectTo(systems.get(4));
+            systems.get(3).connectTo(systems.get(4));
+            systems.get(3).connectTo(systems.get(6));
+            systems.get(4).connectTo(systems.get(5));
+            systems.get(4).connectTo(systems.get(7));
+            systems.get(4).connectTo(systems.get(9));
+            systems.get(5).connectTo(systems.get(9));
+            systems.get(6).connectTo(systems.get(7));
+            systems.get(7).connectTo(systems.get(10));
+            systems.get(8).connectTo(systems.get(11));
+            systems.get(8).connectTo(systems.get(12));
+            systems.get(8).connectTo(systems.get(13));
+            systems.get(9).connectTo(systems.get(13));
+            systems.get(10).connectTo(systems.get(11));
+            systems.get(10).connectTo(systems.get(14));
+            systems.get(11).connectTo(systems.get(15));
+            systems.get(12).connectTo(systems.get(16));
+            systems.get(13).connectTo(systems.get(16));
+            systems.get(13).connectTo(systems.get(19));
+            systems.get(14).connectTo(systems.get(17));
+            systems.get(15).connectTo(systems.get(16));
+            systems.get(15).connectTo(systems.get(17));
+            systems.get(15).connectTo(systems.get(18));
+            systems.get(16).connectTo(systems.get(18));
+            systems.get(16).connectTo(systems.get(19));
+        } else {
+            systems.get(0).connectTo(systems.get(2));
+            systems.get(1).connectTo(systems.get(5));
+            systems.get(2).connectTo(systems.get(3)); systems.get(2).connectTo(systems.get(6));
+            systems.get(3).connectTo(systems.get(4)); systems.get(3).connectTo(systems.get(7));
+            systems.get(4).connectTo(systems.get(5)); systems.get(4).connectTo(systems.get(8));
+            systems.get(5).connectTo(systems.get(9));
+            systems.get(6).connectTo(systems.get(7)); systems.get(6).connectTo(systems.get(10)); systems.get(6).connectTo(systems.get(13));
+            systems.get(7).connectTo(systems.get(8)); systems.get(7).connectTo(systems.get(10)); systems.get(7).connectTo(systems.get(11));
+            systems.get(8).connectTo(systems.get(9)); systems.get(8).connectTo(systems.get(11)); systems.get(8).connectTo(systems.get(12));
+            systems.get(9).connectTo(systems.get(12)); systems.get(9).connectTo(systems.get(16));
+            systems.get(10).connectTo(systems.get(13)); systems.get(10).connectTo(systems.get(14));
+            systems.get(11).connectTo(systems.get(14)); systems.get(11).connectTo(systems.get(15));
+            systems.get(12).connectTo(systems.get(15)); systems.get(12).connectTo(systems.get(16));
+            systems.get(13).connectTo(systems.get(17)); systems.get(13).connectTo(systems.get(20));
+            systems.get(14).connectTo(systems.get(17)); systems.get(14).connectTo(systems.get(18));
+            systems.get(15).connectTo(systems.get(18)); systems.get(15).connectTo(systems.get(19));
+            systems.get(16).connectTo(systems.get(19)); systems.get(16).connectTo(systems.get(23));
+            systems.get(17).connectTo(systems.get(20)); systems.get(17).connectTo(systems.get(21));
+            systems.get(18).connectTo(systems.get(21)); systems.get(18).connectTo(systems.get(22));
+            systems.get(19).connectTo(systems.get(22)); systems.get(19).connectTo(systems.get(23));
+            systems.get(20).connectTo(systems.get(21)); systems.get(20).connectTo(systems.get(24));
+            systems.get(21).connectTo(systems.get(22)); systems.get(21).connectTo(systems.get(25));
+            systems.get(22).connectTo(systems.get(23)); systems.get(22).connectTo(systems.get(26));
+            systems.get(23).connectTo(systems.get(27));
+            systems.get(24).connectTo(systems.get(25)); systems.get(24).connectTo(systems.get(28));
+            systems.get(25).connectTo(systems.get(26));
+            systems.get(26).connectTo(systems.get(27));
+            systems.get(27).connectTo(systems.get(29));
         }
     }
 
-    // Trova i sistemi più vicini a un dato sistema
-    private List<StarSystem> findNearestSystems(StarSystem system, int count) {
-        List<StarSystem> result = new ArrayList<>();
-        List<StarSystem> sortedSystems = new ArrayList<>(systems);
-
-        // Ordina i sistemi per distanza
-        sortedSystems.sort((s1, s2) -> {
-            double d1 = s1.getPosition().distance(system.getPosition());
-            double d2 = s2.getPosition().distance(system.getPosition());
-            return Double.compare(d1, d2);
-        });
-
-        // Salta il primo perché è il sistema stesso
-        for (int i = 1; i <= count && i < sortedSystems.size(); i++) {
-            result.add(sortedSystems.get(i));
-        }
-
-        return result;
-    }
 
     // Aggiunge una flotta alla mappa
     public void addFleet(Fleet fleet) {
@@ -123,19 +180,11 @@ public class GameMap {
 
     // Aggiorna lo stato di tutte le flotte
     public void updateFleets(double deltaTime) {
-        List<Fleet> arrivedFleets = new ArrayList<>();
-
-        for (Fleet fleet : fleets) {
+        for (Fleet fleet : new ArrayList<>(fleets)) {
             fleet.update(deltaTime);
-
             if (fleet.hasArrived()) {
-                arrivedFleets.add(fleet);
+                handleFleetArrival(fleet);
             }
-        }
-
-        // Gestisce le flotte arrivate
-        for (Fleet fleet : arrivedFleets) {
-            handleFleetArrival(fleet);
         }
     }
 

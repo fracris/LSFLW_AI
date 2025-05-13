@@ -7,7 +7,6 @@ import it.unical.model.StarSystem;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
@@ -227,7 +226,7 @@ public class GamePanel extends JPanel {
         Point mapMousePointBeforeZoom = screenToMap(mousePosition);
 
         scale *= v;
-        scale = Math.max(0.01, Math.min(scale, 50.0));
+        scale = Math.max(1, Math.min(scale, 50.0));
 
         Point mapMousePointAfterZoom = screenToMap(mousePosition);
         viewPosition.translate(

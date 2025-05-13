@@ -79,6 +79,7 @@ public class StarSystemView {
         }
 
         // Draw the production rate
+        g2d.setFont(SYSTEM_FONT);
         String prodText = "+" + system.getProductionRate();
         int prodWidth = g2d.getFontMetrics().stringWidth(prodText);
         g2d.setColor(Color.YELLOW);
