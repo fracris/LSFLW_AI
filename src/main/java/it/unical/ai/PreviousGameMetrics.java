@@ -1,4 +1,9 @@
-package it.unical.model;
+package it.unical.ai;
+
+import it.unical.model.Fleet;
+import it.unical.model.GameState;
+import it.unical.model.Player;
+import it.unical.model.StarSystem;
 
 public class PreviousGameMetrics {
     private int mySystemCount;

@@ -172,7 +172,7 @@ public class AIPlayer {
 
     private void executeActionsFromStrings(List<String> actions) {
         // Salva le azioni eseguite in un file (solo per log)
-        saveExecutedActionsToFile(actions);
+        //saveExecutedActionsToFile(actions);
 
         for (String atomStr : actions) {
             try {
