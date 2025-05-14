@@ -22,9 +22,10 @@ public class GameController {
     private int tickCounter = 0;
     private int playerTurn = 0;
     private int sendPerc = 100;
-    private String difficulty;
+    private Difficulty difficulty;
 
-    public GameController(String difficulty) {
+
+    public GameController(Difficulty difficulty) {
         this.difficulty = difficulty;
 
         // Crea lo stato di gioco
@@ -41,6 +42,47 @@ public class GameController {
     }
 
 
+    public void showPauseDialog() {
+        // Ferma il game loop
+        gameTimer.stop();
+        paused = true;
+
+        // Opzioni del dialog
+        String[] options = {"Riprendi", "Menu Principale"};
+
+        // Popup modale FlatLaf
+        int choice = JOptionPane.showOptionDialog(
+                gameFrame,                                // parent component
+                "Il gioco è in pausa",                    // message
+                "Pausa",                                  // title
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,                                     // icona di default
+                options,                                  // labels dei pulsanti
+                options[0]                                // default: “Riprendi”
+        );
+
+        if (choice == 0) {
+            // Riprendi
+            gameTimer.start();
+            paused = false;
+        } else {
+            // Torna al menu principale
+            backToMainMenu();
+        }
+    }
+
+    // Rimuovi togglePause(), oppure rimappalo a showPauseDialog()
+    public void togglePause() {
+        if (paused) {
+            // se vuoi mantenere un semplice toggle…
+            gameTimer.start();
+            paused = false;
+        } else {
+            showPauseDialog();
+        }
+    }
+
 
 
     // Modifica il metodo sendFleet se necessario per assicurarti che rimanga sempre almeno una nave
@@ -52,6 +94,19 @@ public class GameController {
             Player humanPlayer = gameState.getHumanPlayer();
             gameState.sendFleet(humanPlayer, source, target, shipsToSend);
         }
+    }
+
+    private boolean paused = false;
+
+
+
+    public void backToMainMenu() {
+        // Ferma il timer (se non già fermo)
+        gameTimer.stop();
+        // Chiudi la finestra di gioco (GameFrame)
+        if (gameFrame != null) gameFrame.dispose();
+        // Apri il menu principale
+        SwingUtilities.invokeLater(() -> new it.unical.gui.MainMenuFrame());
     }
 
 
@@ -74,19 +129,27 @@ public class GameController {
     // Inizializza e avvia il gioco
     public void initGame() {
         boolean withAI = true;
-        int numSystem = switch (difficulty.toLowerCase()) {
-            case "facile" -> 10;
-            case "medio" -> 20;
-            default -> 30;
-        };
+
+        int numSystem;
+        if (difficulty instanceof Difficulty.Easy) {
+            numSystem = 10;
+        }
+        else if (difficulty instanceof Difficulty.Medium) {
+            numSystem = 20;
+        }
+        else /* must be Hard */ {
+            numSystem = 30;
+        }
+
+
 
         // Inizializza lo stato di gioco con i parametri del livello
-        gameState.initGame(difficulty.toLowerCase(), numSystem, withAI);
+        gameState.initGame(difficulty, numSystem, withAI);
 
         // Crea gli AIPlayer per ogni giocatore IA
         List<Player> aiPlayers = gameState.getAiPlayers();
         for (Player aiPlayer : aiPlayers) {
-            this.aiPlayers.put(aiPlayer, new AIPlayer(aiPlayer, gameState));
+            this.aiPlayers.put(aiPlayer, new AIPlayer(aiPlayer, gameState, difficulty));
         }
 
         // IMPORTANTE: Aggiorna le viste dei sistemi se GameFrame è già stato creato
@@ -179,7 +242,7 @@ public class GameController {
         return inputController;
     }
 
-    public String getDifficulty() {
+    public Difficulty getDifficulty() {
         return difficulty;
     }
 }

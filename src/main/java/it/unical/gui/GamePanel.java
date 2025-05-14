@@ -8,10 +8,12 @@ import it.unical.utils.ResourceLoader;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.image.ImageObserver;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public class GamePanel extends JPanel {
     private GameController gameController;
@@ -43,6 +45,11 @@ public class GamePanel extends JPanel {
     public GamePanel(GameController gameController) {
         this.gameController = gameController;
         setBackground(Color.BLACK);
+
+
+        bindKeyStroke("P", "togglePause", e -> gameController.showPauseDialog());
+
+
 
         // Inizializza le viste dei sistemi e delle flotte
         updateSystemViews();
@@ -76,6 +83,17 @@ public class GamePanel extends JPanel {
         g2d.setTransform(oldTransform);
     }
 
+
+    private void bindKeyStroke(String key, String actionName, Consumer<ActionEvent> handler) {
+        InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = getActionMap();
+        im.put(KeyStroke.getKeyStroke(key), actionName);
+        am.put(actionName, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { handler.accept(e); }
+        });
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -89,7 +107,7 @@ public class GamePanel extends JPanel {
         g2d.scale(scale, scale);
 
         // Disegna lo sfondo dello spazio (stelle casuali)
-        drawBackground(g2d);
+        //drawBackground(g2d);
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);

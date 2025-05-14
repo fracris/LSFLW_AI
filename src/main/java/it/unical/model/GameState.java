@@ -20,7 +20,7 @@ public class GameState {
     }
 
     // Inizializza una nuova partita
-    public void initGame(String difficulty, int numSystem, boolean withAI) {
+    public void initGame(Difficulty difficulty, int numSystem, boolean withAI) {
         // Genera la mappa
         gameMap.generateMap(numSystem, difficulty);
         Color[] playerColors;
@@ -28,11 +28,11 @@ public class GameState {
         players.clear();
         int numPlayers;
 
-        if(difficulty.equals("facile")){
+        if(difficulty instanceof Difficulty.Easy){
             numPlayers=2;
             playerColors= new Color[]{Color.BLUE, Color.RED};
         }
-        else if(difficulty.equals("medio")){
+        else if(difficulty instanceof Difficulty.Medium){
             numPlayers=3;
             playerColors= new Color[]{Color.BLUE, Color.RED, Color.GREEN};
         }
@@ -63,21 +63,21 @@ public class GameState {
         return null;
     }
     // Assegna i sistemi iniziali ai giocatori
-    private void assignInitialSystems(String difficulty) {
+    private void assignInitialSystems(Difficulty difficulty) {
         List<StarSystem> systems = gameMap.getSystems();
         int numPlayers = players.size();
 
         players.get(0).addSystem(systems.get(0));
         players.get(1).addSystem(systems.get(systems.size() - 1));
         if (numPlayers > 2) {
-            if(difficulty.equals("medio")){
+            if(difficulty instanceof Difficulty.Easy){
                 players.get(2).addSystem(systems.get(17));
             } else {
                 players.get(2).addSystem(systems.get(1));
             }
         }
         if (numPlayers > 3) {
-            if(difficulty.equals("medio")){
+            if(difficulty instanceof Difficulty.Medium){
                 players.get(3).addSystem(systems.get(systems.size() / 4));
             } else {
                 players.get(3).addSystem(systems.get(28));

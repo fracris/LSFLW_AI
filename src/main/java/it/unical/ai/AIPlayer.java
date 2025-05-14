@@ -16,9 +16,11 @@ import it.unical.mat.embasp.specializations.dlv2.desktop.DLV2DesktopService;
 import it.unical.model.*;
 
 public class AIPlayer {
+    private Difficulty difficulty;
     private Player player;
     private GameState gameState;
-    private String aspStrategy = "encodings/strategy_selector.txt";
+    private String aspStrategy = "encodings/easy.txt";
+
     private boolean isInitialized;
     // Directory per salvare i log dei fatti ASP
     private final String logDirectory = "logs/asp_facts/";
@@ -27,15 +29,32 @@ public class AIPlayer {
     // Oggetto che mantiene le metriche del turno precedente
     private PreviousGameMetrics previousMetrics;
 
-    public AIPlayer(Player player, GameState gameState) {
+    public AIPlayer(Player player, GameState gameState, Difficulty difficulty) {
         this.player = player;
         this.gameState = gameState;
+        this.difficulty = difficulty;
         // Inizializza le metriche con i valori predefiniti
         this.previousMetrics = new PreviousGameMetrics();
 
         if (!player.isAI()) {
             System.err.println("ATTENZIONE: AIPlayer assegnato a un giocatore non IA");
             return;
+        }
+
+        if(difficulty instanceof Difficulty.Easy)
+        {
+            this.aspStrategy = "encodings/easy.txt";
+
+        }
+        else if (difficulty instanceof Difficulty.Medium)
+        {
+            this.aspStrategy = "encodings/medium.txt";
+
+        }
+        else
+        {
+            this.aspStrategy = "encodings/hard.txt";
+
         }
 
         File aspFile = new File(aspStrategy);
@@ -172,8 +191,9 @@ public class AIPlayer {
 
     private void executeActionsFromStrings(List<String> actions) {
         // Salva le azioni eseguite in un file (solo per log)
-        //saveExecutedActionsToFile(actions);
+        // saveExecutedActionsToFile(actions);
 
+        boolean executedAny = false;
         for (String atomStr : actions) {
             try {
                 String content = atomStr.substring("send_fleet(".length(), atomStr.length() - 1);
@@ -182,41 +202,54 @@ public class AIPlayer {
                     System.err.println("Formato non valido: " + atomStr);
                     continue;
                 }
-                System.out.println("Azione eseguita: " + params[0] + ", " + params[1] + ", " + params[2]);
 
                 int sourceId = Integer.parseInt(params[0].trim());
                 int targetId = Integer.parseInt(params[1].trim());
-                int ships = Integer.parseInt(params[2].trim());
+                int ships    = Integer.parseInt(params[2].trim());
 
                 StarSystem source = findSystemById(sourceId);
                 StarSystem target = findSystemById(targetId);
 
+                // validazioni…
                 if (source == null || target == null) {
-                    System.err.println("Sistema non trovato: source=" + sourceId + ", target=" + targetId);
+                    System.err.println("Sistema non trovato: " + atomStr);
                     continue;
                 }
-                if (!Objects.equals(source.getOwner(), player)) {
-                    System.err.println("Il sistema " + sourceId + " non appartiene al giocatore " + player.getId());
+                if (!player.equals(source.getOwner())) {
+                    System.err.println("Non è tuo: " + atomStr);
                     continue;
                 }
                 if (!source.getConnectedSystems().contains(target)) {
-                    System.err.println("I sistemi " + sourceId + " e " + targetId + " non sono connessi");
+                    System.err.println("Non connessi: " + atomStr);
                     continue;
                 }
-                if (source.getShips() < ships) {
+                if (source.getShips() < ships + 1) { // lascia sempre 1 nave
+                    System.err.println("Non abbastanza navi: " + atomStr);
                     continue;
                 }
 
+                // Esegui la flotta
                 Fleet fleet = gameState.sendFleet(player, source, target, ships);
                 if (fleet != null) {
-                    return;
+
+                    executedAny = true;
+                    if(difficulty instanceof Difficulty.Easy)
+                    {
+                         return ; // => se voglio mandare solo una alla volta per il livello medio
+                    }
+                    System.out.println("Flotta inviata: " + atomStr);
                 }
             } catch (Exception e) {
-                System.err.println("Errore nell'interpretazione dell'azione: " + atomStr);
+                System.err.println("Errore parsing action: " + atomStr);
                 e.printStackTrace();
             }
         }
+
+        if (!executedAny) {
+            System.out.println("Nessuna flotta inviata, tutti i send_fleet invalidi o già processati");
+        }
     }
+
 
     // Metodo per salvare le azioni eseguite in un file
     private void saveExecutedActionsToFile(List<String> actions) {

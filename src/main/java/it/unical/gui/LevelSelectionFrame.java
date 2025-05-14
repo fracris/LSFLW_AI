@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.Timer;
 import com.formdev.flatlaf.FlatDarkLaf;
+import it.unical.model.Difficulty;
 
 public class LevelSelectionFrame extends JFrame {
     public LevelSelectionFrame() {
@@ -41,9 +42,9 @@ public class LevelSelectionFrame extends JFrame {
         panel.add(Box.createVerticalStrut(40));
 
         // Pulsanti con animazione hover
-        String[] levels = {"Facile", "Medio", "Difficile"};
-        for (String lvl : levels) {
-            AnimatedButton btn = new AnimatedButton(lvl);
+        Difficulty[] levels = {Difficulty.easy(), Difficulty.medium(), Difficulty.hard()};
+        for (Difficulty lvl : levels) {
+            AnimatedButton btn = new AnimatedButton(lvl.toString());
             btn.setAlignmentX(Component.CENTER_ALIGNMENT);
             btn.setMaximumSize(new Dimension(200, 50));
             btn.addActionListener(e -> {

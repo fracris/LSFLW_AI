@@ -3,6 +3,7 @@ package it.unical;
 import it.unical.controller.GameController;
 import it.unical.gui.GameFrame;
 import it.unical.gui.MainMenuFrame;
+import it.unical.model.Difficulty;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -24,7 +25,7 @@ public class Main {
     /**
      * Avvia il gioco con il livello selezionato.
      */
-    public static void startGame(String level) {
+    public static void startGame(Difficulty level) {
         SwingUtilities.invokeLater(() -> {
             System.out.println("=== Little Stars for Little Wars ===");
             System.out.println("Livello scelto: " + level);

@@ -16,14 +16,14 @@ public class GameMap {
     }
 
     // Crea una mappa casuale con un dato numero di sistemi
-    public void generateMap(int numSystem, String difficulty) {
+    public void generateMap(int numSystem, Difficulty difficulty) {
         systems.clear();
 
         StarSystem newSystem;
         Point[] positions;
         int[] productionRates;
 
-        if (difficulty.equals("facile")) {
+        if (difficulty instanceof Difficulty.Easy) {
             positions = new Point[]{
                     new Point(200, (mapSize.height - 20) / 2),
                     new Point(300, (mapSize.height - 20) / 2 - 100),
@@ -37,7 +37,7 @@ public class GameMap {
                     new Point(600, (mapSize.height - 20) / 2),
             };
             productionRates= new int[]{2, 1, 1, 3, 2, 2, 3, 1, 1, 1};
-        } else if (difficulty.equals("medio")) {
+        } else if (difficulty instanceof Difficulty.Medium) {
             positions = new Point[]{
                     new Point(200, (mapSize.height - 20) / 2),
                     new Point(200, (mapSize.height - 20) / 2 - 200),
@@ -93,8 +93,8 @@ public class GameMap {
     }
 
     // Crea connessioni tra i sistemi stellari
-    private void createConnections(String difficulty) {
-        if (difficulty.equals("facile")) {
+    private void createConnections(Difficulty difficulty) {
+        if (difficulty instanceof Difficulty.Easy) {
             systems.get(0).connectTo(systems.get(1));
             systems.get(0).connectTo(systems.get(2));
             systems.get(0).connectTo(systems.get(3));
@@ -106,7 +106,7 @@ public class GameMap {
             systems.get(6).connectTo(systems.get(9));
             systems.get(7).connectTo(systems.get(9));
             systems.get(8).connectTo(systems.get(9));
-        } else if (difficulty.equals("medio")) {
+        } else if (difficulty instanceof Difficulty.Medium) {
             systems.get(0).connectTo(systems.get(1));
             systems.get(0).connectTo(systems.get(3));
             systems.get(1).connectTo(systems.get(3));
