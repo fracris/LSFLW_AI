@@ -223,7 +223,7 @@ public class AIPlayer {
                     System.err.println("Non connessi: " + atomStr);
                     continue;
                 }
-                if (source.getShips() < ships + 1) { // lascia sempre 1 nave
+                if (source.getShips() < ships) { // lascia sempre 1 nave
                     System.err.println("Non abbastanza navi: " + atomStr);
                     continue;
                 }

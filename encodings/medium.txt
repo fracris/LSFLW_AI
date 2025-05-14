@@ -225,10 +225,24 @@ neutral_opportunity :- neutral_system_count(Count), Count > 0.
 use_aggressive :- superior, enemy_weakened.
 use_aggressive :- superior, systems_gained.
 
-% Scegli la strategia difensiva quando siamo in svantaggio o abbiamo perso terreno
+% VERSIONE ORIGINALE (problema)
 % use_defensive :- outnumbered, not superior.
 % use_defensive :- ships_decreased, not superior.
 % use_defensive :- systems_lost, not superior.
+
+% VERSIONE MODIFICATA con condizioni più specifiche
+use_defensive :- outnumbered, not superior,
+                 enemy_ships_total(ET), my_ships_total(MT),
+                 MT*10 > ET*7.  % Svantaggio limitato (almeno il 70% della forza nemica)
+
+use_defensive :- ships_decreased, not superior, not systems_lost,
+                 my_ships_total(MT), previous_my_ships_total(PMT),
+                 PMT-MT < PMT/4.  % Perdita navi contenuta (<25%)
+
+use_defensive :- systems_lost, not superior, border_system(_),
+                 my_system_count(MC), previous_my_system_count(PMC),
+                 PMC-MC == 1.  % Perso solo un sistema
+
 
 
 % Scegli la strategia tecnologica quando c'è equilibrio e opportunità di crescita
