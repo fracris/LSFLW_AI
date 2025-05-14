@@ -4,10 +4,13 @@ import it.unical.controller.GameController;
 import it.unical.model.Fleet;
 import it.unical.model.GameMap;
 import it.unical.model.StarSystem;
+import it.unical.utils.ResourceLoader;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.awt.image.ImageObserver;
 import java.util.ArrayList;
 
 public class GamePanel extends JPanel {
@@ -27,6 +30,15 @@ public class GamePanel extends JPanel {
     // Variabili per gestire le stelle inizializzate una sola volta
     private Point[] starPositions;
     private int[] starSizes;
+
+    private static final Image backgroundImage;
+    private static final ImageObserver backgroundStarObserver;
+
+    static {
+        ImageIcon backgroundStarIcon = new ImageIcon(ResourceLoader.class.getClassLoader().getResource("images/background.gif"));
+        backgroundImage = backgroundStarIcon.getImage();
+        backgroundStarObserver = backgroundStarIcon.getImageObserver();
+    }
 
     public GamePanel(GameController gameController) {
         this.gameController = gameController;
@@ -58,12 +70,10 @@ public class GamePanel extends JPanel {
 
     // Disegna lo sfondo con stelle random inizializzate una sola volta
     private void drawBackground(Graphics2D g2d) {
-        g2d.setColor(Color.WHITE);
-        for (int i = 0; i < starPositions.length; i++) {
-            Point position = starPositions[i];
-            int size = starSizes[i];
-            g2d.fillOval(position.x, position.y, size, size);
-        }
+        AffineTransform oldTransform = g2d.getTransform();
+        g2d.setTransform(new AffineTransform());
+        g2d.drawImage(backgroundImage, 0, 0, backgroundStarObserver);
+        g2d.setTransform(oldTransform);
     }
 
     @Override
@@ -79,7 +89,7 @@ public class GamePanel extends JPanel {
         g2d.scale(scale, scale);
 
         // Disegna lo sfondo dello spazio (stelle casuali)
-        //drawBackground(g2d);
+        drawBackground(g2d);
 
         // Disegna le connessioni tra i sistemi
         drawConnections(g2d);

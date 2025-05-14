@@ -19,6 +19,7 @@ public class GameController {
     private Map<Player, AIPlayer> aiPlayers;
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
+    private int playerTurn = 0;
     private int sendPerc = 100;
     private String difficulty;
 
@@ -100,8 +101,9 @@ public class GameController {
         // Aggiorna le flotte (movimento)
         gameState.getGameMap().updateFleets(0.3);
 
-        if (tickCounter % 200 == 0) {
-            handleAIPlayers();
+        if (tickCounter % (200/(gameState.getPlayers().size()-1)) == 0) {
+            handleAIPlayers(aiPlayers.get(gameState.getPlayers().get(playerTurn+1)));
+            playerTurn = (playerTurn+1)%(gameState.getPlayers().size()-1);
         }
 
         // Aggiorna l'interfaccia grafica
@@ -116,15 +118,13 @@ public class GameController {
         }
     }
 
-    private void handleAIPlayers() {
+    private void handleAIPlayers(AIPlayer i) {
         // Esegui il ragionamento per ogni IA
-        for (AIPlayer ai : aiPlayers.values()) {
-            try {
-                ai.performTurn();
-            } catch (Exception e) {
-                System.err.println("Errore durante il turno dell'IA: " + e.getMessage());
-                e.printStackTrace();
-            }
+        try {
+            i.performTurn();
+        } catch (Exception e) {
+            System.err.println("Errore durante il turno dell'IA: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

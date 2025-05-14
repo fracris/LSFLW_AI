@@ -130,7 +130,7 @@ public class GameState {
         if (source.getOwner() == who && source.getShips() >= ships) {
             source.removeShips(ships);
             int fleetId = gameMap.getFleets().size();
-            Fleet f = new Fleet(fleetId, who, ships, source, target, 0.05);
+            Fleet f = new Fleet(fleetId, who, ships, source, target, 0.02);
             who.addFleet(f);
             gameMap.addFleet(f);
             return f;
