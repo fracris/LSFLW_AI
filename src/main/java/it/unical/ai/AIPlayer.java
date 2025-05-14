@@ -18,7 +18,7 @@ import it.unical.model.*;
 public class AIPlayer {
     private Player player;
     private GameState gameState;
-    private String aspStrategy = "encodings/strategy_selector.txt";
+    private String aspStrategy = "encodings/basic_strategy.txt";
     private boolean isInitialized;
     // Directory per salvare i log dei fatti ASP
     private final String logDirectory = "logs/asp_facts/";
@@ -73,7 +73,7 @@ public class AIPlayer {
 
             // *** STAMPA I FATTI ASP PER DEBUG ***
             System.out.println("--- ASP Facts START ---");
-            System.out.println(aspFacts);
+            //System.out.println(aspFacts);
             System.out.println("--- ASP Facts END ---\n");
 
             // Salva i fatti ASP in un file (solo per log)

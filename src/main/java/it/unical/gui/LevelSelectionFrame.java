@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.Timer;
 import com.formdev.flatlaf.FlatDarkLaf;
+import it.unical.Main;
 
 public class LevelSelectionFrame extends JFrame {
     public LevelSelectionFrame() {
@@ -47,7 +48,7 @@ public class LevelSelectionFrame extends JFrame {
             btn.setAlignmentX(Component.CENTER_ALIGNMENT);
             btn.setMaximumSize(new Dimension(200, 50));
             btn.addActionListener(e -> {
-                it.unical.Main.startGame(lvl);
+                Main.startGame(lvl);
                 dispose();
             });
             panel.add(btn);

@@ -145,9 +145,24 @@ public class InputController extends MouseAdapter {
     // Metodo per calcolare quante navi inviare in base alla percentuale
     private int calculateShipsToSend(StarSystem system, int percentage) {
         int totalShips = system.getShips();
-        int shipsToSend = (int)(totalShips * percentage / 100);
+        int shipsToSend = totalShips * percentage / 100;
 
         // Assicurati di non inviare 0 navi e di lasciare sempre almeno una nave
         return Math.max(1, Math.min(shipsToSend, totalShips - 1));
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        if (e.getClickCount() == 2 && !e.isConsumed()) {
+            e.consume();
+            GamePanel gamePanel = gameController.getGamePanel();
+            Point mapPoint = gamePanel.screenToMap(e.getPoint());
+            StarSystem selectedSystem = gamePanel.findSystemAt(mapPoint);
+
+            if (selectedSystem != null && selectedSystem.isAutomated()) {
+                selectedSystem.setAutomated(false);
+                selectedSystem.setAutomatedTo(null);
+            }
+        }
     }
 }

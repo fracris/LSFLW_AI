@@ -1,4 +1,3 @@
-% strategy_selector.asp
 % Sistema di selezione dinamica delle strategie in base alla memoria dei fatti precedenti
 
 % ===================================
@@ -6,22 +5,20 @@
 % ===================================
 
 % --- Strategia Aggressiva ---
-strategy_aggressive(M,S,Ships) :-
+strategy_aggressive(M,S,MyShips) :-
     my_system(M),
     neutral_system(S),
     undirected_connected(M,S),
     ships(M,MyShips),
-    MyShips > 10,  % Soglia bassa per attaccare
-    Ships = MyShips - 3.  % Lascia poche navi a difesa
+    MyShips > 10.  % Soglia bassa per attaccare
 
-strategy_aggressive(M,S,Ships) :-
+strategy_aggressive(M,S,MyShips) :-
     my_system(M),
     enemy_system(S),
     undirected_connected(M,S),
     ships(M,MyShips),
     ships(S,EnemyShips),
-    MyShips > EnemyShips + 5,  % Minore vantaggio richiesto
-    Ships = MyShips - 2.  % Invia più navi all'attacco
+    MyShips > EnemyShips + 5.  % Minore vantaggio richiesto
 
 % --- Strategia Difensiva ---
 strategy_defensive(M,S,Ships) :-
@@ -29,60 +26,51 @@ strategy_defensive(M,S,Ships) :-
     my_system(S),
     M != S,
     undirected_connected(M,S),
-    sistema_di_confine(S),  % Priorità ai sistemi di frontiera
+    border_system(S),  % Priorità ai sistemi di frontiera
     ships(M,MyShips),
     MyShips > 15,
     Ships = MyShips / 2.
 
-strategy_defensive(M,S,Ships) :-
+strategy_defensive(M,S,EnemyShips) :-
     my_system(M),
     enemy_system(S),
     undirected_connected(M,S),
     ships(M,MyShips),
     ships(S,EnemyShips),
     Advantage = EnemyShips + (EnemyShips / 2),
-    MyShips > Advantage,
-    Ships = EnemyShips + 5.
+    MyShips > Advantage.
 
 
 % --- Strategia Tecnologica (Focus sui Sistemi Produttivi) ---
-strategy_technological(M,S,Ships) :-
+strategy_technological(M,S,MyShips) :-
     my_system(M),
     neutral_system(S),
-    alta_produzione(S),  % Priorità ai sistemi con alta produzione
+    high_production_system(S),  % Priorità ai sistemi con alta produzione
     undirected_connected(M,S),
     ships(M,MyShips),
-    MyShips > 20,
-    Ships = MyShips - 5.
+    MyShips > 20.
 
-strategy_technological(M,S,Ships) :-
+strategy_technological(M,S,MyShips) :-
     my_system(M),
     enemy_system(S),
-    alta_produzione(S),  % Priorità ai sistemi con alta produzione
+    high_production_system(S),  % Priorità ai sistemi con alta produzione
     undirected_connected(M,S),
     ships(M,MyShips),
-    MyShips > 20,
-    Ships = MyShips - 5.
+    MyShips > 20.
 
 % --- Strategia Espansione (Conquistare Più Territori) ---
-strategy_expansion(M,S,Ships) :-
+strategy_expansion(M,S,MyShips) :-
     my_system(M),
     neutral_system(S),
     undirected_connected(M,S),
     ships(M,MyShips),
-    MyShips > 8,  % Soglia molto bassa
-    Ships = MyShips - 2.  % Invia quasi tutte le navi
+    MyShips > 8.
 
 % --- Strategia Consolidamento (Rinforza Sistemi Chiave) ---
 % Calcola se MyShips è maggiore di 1.5 volte TargetShips (usando moltiplicazione intera per evitare float)
 % Dichiarazione di dominio: My e Target provengono sempre da ships/2
 dom_ships(My)   :- ships(_,My).
 dom_ships(Target) :- ships(_,Target).
-
-superiore_una_volta_e_mezzo(My,Target) :-
-    dom_ships(My),
-    dom_ships(Target),
-    My*10 > Target*15.
 
 
 % Strategia di consolidamento
@@ -93,8 +81,8 @@ strategy_consolidation(M,S,Ships) :-
     undirected_connected(M,S),
     ships(M,MyShips),
     ships(S,TargetShips),
-    superiore_una_volta_e_mezzo(MyShips, TargetShips),
-    bilanciamento_navi(M,S,Ships).
+    MyShips*10 > TargetShips*15,
+    ship_balancing(M,S,Ships).
 
 % ===============================
 % PREDICATI AUSILIARI
@@ -105,24 +93,24 @@ undirected_connected(M,S) :- connected(M,S).
 undirected_connected(M,S) :- connected(S,M).
 
 % Sistema di confine (vicino a nemici o neutrali)
-sistema_di_confine(S) :-
+border_system(S) :-
     my_system(S),
     undirected_connected(S,N),
     not my_system(N).
 
 % Sistema centrale (non di confine)
-sistema_centrale(S) :-
+central_system(S) :-
     my_system(S),
-    not sistema_di_confine(S).
+    not border_system(S).
 
 % Sistema con alta produzione
-alta_produzione(S) :-
+high_production_system(S) :-
     system(S),
     production(S,P),
     P >= 5.
 
 % Calcola bilanciamento ottimale di navi tra due sistemi
-bilanciamento_navi(M,S,Ships) :-
+ship_balancing(M,S,Ships) :-
     my_system(M),
     my_system(S),
     ships(M,MyShips),
@@ -238,9 +226,9 @@ use_aggressive :- superior, enemy_weakened.
 use_aggressive :- superior, systems_gained.
 
 % Scegli la strategia difensiva quando siamo in svantaggio o abbiamo perso terreno
-use_defensive :- outnumbered, not superior.
-use_defensive :- ships_decreased, not superior.
-use_defensive :- systems_lost, not superior.
+% use_defensive :- outnumbered, not superior.
+% use_defensive :- ships_decreased, not superior.
+% use_defensive :- systems_lost, not superior.
 
 
 % Scegli la strategia tecnologica quando c'è equilibrio e opportunità di crescita
@@ -263,8 +251,8 @@ use_consolidation :-
     Count > 2.
 
 % Strategia di default se nessuna condizione speciale è soddisfatta
-use_defensive :- not use_aggressive, not use_technological,
-                 not use_expansion, not use_consolidation.
+use_expansion :- not use_aggressive, not use_technological,
+                 not use_defensive, not use_consolidation.
 
 % ================================
 % APPLICAZIONE DELLA STRATEGIA

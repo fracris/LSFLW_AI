@@ -16,9 +16,7 @@ public class Main {
             e.printStackTrace();
         }
         // Avvia GUI con il menu principale
-        SwingUtilities.invokeLater(() -> {
-            new MainMenuFrame();
-        });
+        SwingUtilities.invokeLater(MainMenuFrame::new);
     }
 
     /**
