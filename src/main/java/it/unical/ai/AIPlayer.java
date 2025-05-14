@@ -45,7 +45,7 @@ public class AIPlayer {
         }
 
         // Crea la directory per i log se non esiste
-        createLogDirectory();
+        //createLogDirectory();
 
         this.isInitialized = true;
     }

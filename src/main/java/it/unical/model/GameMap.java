@@ -199,6 +199,7 @@ public class GameMap {
 
     // Aggiorna lo stato di tutte le flotte
     public void updateFleets(double deltaTime) {
+        checkFleetCollisions();
         for (Fleet fleet : new ArrayList<>(fleets)) {
             fleet.update(deltaTime);
             if (fleet.hasArrived()) {
@@ -277,28 +278,28 @@ public class GameMap {
 
 
     // Aggiorna lo stato di tutte le flotte
-    public void updateFleets(double deltaTime) {
-        List<Fleet> arrivedFleets = new ArrayList<>();
-
-        // Aggiorna la posizione di tutte le flotte
-        for (Fleet fleet : fleets) {
-            fleet.update(deltaTime);
-
-            if (fleet.hasArrived()) {
-                arrivedFleets.add(fleet);
-            }
-        }
-
-        // Controlla le collisioni tra flotte
-        checkFleetCollisions();
-
-        // Gestisce le flotte arrivate
-        for (Fleet fleet : arrivedFleets) {
-            if (fleets.contains(fleet)) { // Verifica che la flotta non sia stata distrutta in una collisione
-                handleFleetArrival(fleet);
-            }
-        }
-    }
+//    public void updateFleets(double deltaTime) {
+//        List<Fleet> arrivedFleets = new ArrayList<>();
+//
+//        // Aggiorna la posizione di tutte le flotte
+//        for (Fleet fleet : fleets) {
+//            fleet.update(deltaTime);
+//
+//            if (fleet.hasArrived()) {
+//                arrivedFleets.add(fleet);
+//            }
+//        }
+//
+//        // Controlla le collisioni tra flotte
+//        checkFleetCollisions();
+//
+//        // Gestisce le flotte arrivate
+//        for (Fleet fleet : arrivedFleets) {
+//            if (fleets.contains(fleet)) { // Verifica che la flotta non sia stata distrutta in una collisione
+//                handleFleetArrival(fleet);
+//            }
+//        }
+//    }
 
     // Nuovo metodo per controllare le collisioni tra flotte
     private void checkFleetCollisions() {
