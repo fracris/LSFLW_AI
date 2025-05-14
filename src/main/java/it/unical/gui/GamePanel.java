@@ -141,7 +141,7 @@ public class GamePanel extends JPanel {
     private void drawConnections(Graphics2D g2d) {
         GameMap gameMap = gameController.getGameState().getGameMap();
 
-        g2d.setStroke(new BasicStroke(1.0f));
+        g2d.setStroke(new BasicStroke(3.0f));
         g2d.setColor(new Color(80, 80, 100));
 
         for (StarSystem system : gameMap.getSystems()) {
