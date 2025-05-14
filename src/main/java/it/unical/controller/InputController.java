@@ -115,8 +115,15 @@ public class InputController extends MouseAdapter {
                         selectedSystem.setAutomatedTo(targetSystem);
                         selectedSystem.setSendMode(gameController.getSendPerc());
                         new Thread(() -> {
-                            while (selectedSystem.isAutomated() && selectedSystem.getAutomatedTo()==targetSystem && selectedSystem.getShips() > 0) {
-                                gameController.sendFleet(selectedSystem, targetSystem, selectedSystem.getShips()*selectedSystem.getSendMode()/100);
+                            while (selectedSystem.isAutomated() && selectedSystem.getAutomatedTo()==targetSystem && selectedSystem.getShips() > 1) { // Modifica: deve avere più di 1 nave
+                                // Calcola quante navi inviare in base alla percentuale
+                                int shipsToSend = calculateShipsToSend(selectedSystem, selectedSystem.getSendMode());
+
+                                // Invia le navi solo se ci sono abbastanza navi
+                                if (shipsToSend > 0) {
+                                    gameController.sendFleet(selectedSystem, targetSystem, shipsToSend);
+                                }
+
                                 gamePanel.repaint();
                                 try {
                                     Thread.sleep(2000);
@@ -133,5 +140,14 @@ public class InputController extends MouseAdapter {
                 }
             }
         } else lastMousePosition = null;
+    }
+
+    // Metodo per calcolare quante navi inviare in base alla percentuale
+    private int calculateShipsToSend(StarSystem system, int percentage) {
+        int totalShips = system.getShips();
+        int shipsToSend = (int)(totalShips * percentage / 100);
+
+        // Assicurati di non inviare 0 navi e di lasciare sempre almeno una nave
+        return Math.max(1, Math.min(shipsToSend, totalShips - 1));
     }
 }

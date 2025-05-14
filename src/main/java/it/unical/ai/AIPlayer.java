@@ -1,9 +1,11 @@
-package it.unical.model;
+package it.unical.ai;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import it.unical.mat.embasp.base.Handler;
 import it.unical.mat.embasp.base.InputProgram;
@@ -11,16 +13,25 @@ import it.unical.mat.embasp.base.Output;
 import it.unical.mat.embasp.languages.asp.ASPInputProgram;
 import it.unical.mat.embasp.platforms.desktop.DesktopHandler;
 import it.unical.mat.embasp.specializations.dlv2.desktop.DLV2DesktopService;
+import it.unical.model.*;
 
 public class AIPlayer {
     private Player player;
     private GameState gameState;
-    private String aspStrategy = "encodings/basic_strategy.txt";
+    private String aspStrategy = "encodings/strategy_selector.txt";
     private boolean isInitialized;
+    // Directory per salvare i log dei fatti ASP
+    private final String logDirectory = "logs/asp_facts/";
+    // Formato data per i nomi dei file
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+    // Oggetto che mantiene le metriche del turno precedente
+    private PreviousGameMetrics previousMetrics;
 
     public AIPlayer(Player player, GameState gameState) {
         this.player = player;
         this.gameState = gameState;
+        // Inizializza le metriche con i valori predefiniti
+        this.previousMetrics = new PreviousGameMetrics();
 
         if (!player.isAI()) {
             System.err.println("ATTENZIONE: AIPlayer assegnato a un giocatore non IA");
@@ -33,7 +44,21 @@ public class AIPlayer {
             return;
         }
 
+        // Crea la directory per i log se non esiste
+        createLogDirectory();
+
         this.isInitialized = true;
+    }
+
+    // Metodo per creare la directory dei log
+    private void createLogDirectory() {
+        File directory = new File(logDirectory);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (!created) {
+                System.err.println("ERRORE: Impossibile creare la directory per i log: " + logDirectory);
+            }
+        }
     }
 
     public void performTurn() {
@@ -45,6 +70,14 @@ public class AIPlayer {
         try {
             // Genera i fatti ASP
             String aspFacts = convertGameStateToASP();
+
+            // *** STAMPA I FATTI ASP PER DEBUG ***
+            System.out.println("--- ASP Facts START ---");
+            System.out.println(aspFacts);
+            System.out.println("--- ASP Facts END ---\n");
+
+            // Salva i fatti ASP in un file (solo per log)
+            //saveAspFactsToFile(aspFacts);
 
             // Creazione del handler
             Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
@@ -59,23 +92,70 @@ public class AIPlayer {
             factsProgram.addProgram(aspFacts);
             handler.addProgram(factsProgram);
 
+            // Esegue DLV2
             Output output = handler.startSync();
 
-            if (output == null || output.getErrors() != null && !output.getErrors().isEmpty()) {
+            // *** STAMPA L'OUTPUT DLV PER DEBUG ***
+            if (output != null) {
+                System.out.println("--- DLV Output START ---");
+                System.out.println(output.getOutput());
+                System.out.println("--- DLV Output END ---\n");
+            }
+
+            if (output == null || (output.getErrors() != null && !output.getErrors().isEmpty())) {
                 System.err.println("Errore durante l'esecuzione di EMBASP: " + output.getErrors());
                 return;
             }
 
             // Estrazione e interpretazione degli answer set
             List<String> actions = parseAnswerSets(output.getOutput());
+
+            // Salva anche gli answer set trovati
+            //saveAnswerSetsToFile(output.getOutput());
+
             if (!actions.isEmpty()) {
                 executeActionsFromStrings(actions);
             } else {
                 System.out.println("Nessun answer set valido trovato per " + player.getName());
             }
+
+            // Aggiorna le metriche precedenti con lo stato corrente del gioco
+            // (da fare dopo l'esecuzione delle azioni per il prossimo turno)
+            previousMetrics.updateFromGameState(gameState, player);
+
         } catch (Exception e) {
             System.err.println("Errore durante il turno IA: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    // Metodo per salvare i fatti ASP in un file
+    private void saveAspFactsToFile(String aspFacts) {
+        String timestamp = dateFormat.format(new Date());
+        String filename = logDirectory + "player" + player.getId() + "_facts_" + timestamp + ".asp";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            writer.write("% Fatti ASP generati da " + player.getName() + " (ID: " + player.getId() + ")\n");
+            writer.write("% Data: " + new Date() + "\n\n");
+            writer.write(aspFacts);
+            System.out.println("Fatti ASP salvati in: " + filename);
+        } catch (IOException e) {
+            System.err.println("Errore durante il salvataggio dei fatti ASP su file: " + e.getMessage());
+        }
+    }
+
+    // Metodo per salvare gli answer set in un file
+    private void saveAnswerSetsToFile(String output) {
+        String timestamp = dateFormat.format(new Date());
+        String filename = logDirectory + "player" + player.getId() + "_answers_" + timestamp + ".txt";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            writer.write("% Answer sets generati per " + player.getName() + " (ID: " + player.getId() + ")\n");
+            writer.write("% Data: " + new Date() + "\n\n");
+            writer.write(output);
+            System.out.println("Answer sets salvati in: " + filename);
+        } catch (IOException e) {
+            System.err.println("Errore durante il salvataggio degli answer set su file: " + e.getMessage());
         }
     }
 
@@ -91,6 +171,8 @@ public class AIPlayer {
     }
 
     private void executeActionsFromStrings(List<String> actions) {
+        // Salva le azioni eseguite in un file (solo per log)
+        //saveExecutedActionsToFile(actions);
 
         for (String atomStr : actions) {
             try {
@@ -134,7 +216,25 @@ public class AIPlayer {
                 e.printStackTrace();
             }
         }
+    }
 
+    // Metodo per salvare le azioni eseguite in un file
+    private void saveExecutedActionsToFile(List<String> actions) {
+        String timestamp = dateFormat.format(new Date());
+        String filename = logDirectory + "player" + player.getId() + "_actions_" + timestamp + ".txt";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            writer.write("% Azioni eseguite da " + player.getName() + " (ID: " + player.getId() + ")\n");
+            writer.write("% Data: " + new Date() + "\n\n");
+
+            for (String action : actions) {
+                writer.write(action + "\n");
+            }
+
+            System.out.println("Azioni eseguite salvate in: " + filename);
+        } catch (IOException e) {
+            System.err.println("Errore durante il salvataggio delle azioni su file: " + e.getMessage());
+        }
     }
 
     private String convertGameStateToASP() {
@@ -176,6 +276,9 @@ public class AIPlayer {
                     .append((int) fleet.getProgress()).append(").\n");
         }
 
+        // Aggiungi i dati storici
+        facts.append("\n% Dati storici per confronto\n");
+        facts.append(previousMetrics.toAspFacts());
         return facts.toString();
     }
 

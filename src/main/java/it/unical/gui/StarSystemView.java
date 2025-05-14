@@ -26,6 +26,19 @@ public class StarSystemView {
     private static final Image ai3StarImage;
     private static final ImageObserver ai3StarObserver;
 
+    // Aggiungi questi campi alla classe StarSystem
+    private int sendMode = 100; // Default: 100%
+
+    // Aggiungi questo metodo getter e setter alla classe StarSystem
+    public int getSendMode() {
+        return sendMode;
+    }
+
+    public void setSendMode(int sendMode) {
+        this.sendMode = sendMode;
+    }
+
+
     static {
         ImageIcon neutralStarIcon = new ImageIcon(ResourceLoader.class.getClassLoader().getResource("images/white_star.gif"));
         neutralStarImage = neutralStarIcon.getImage();

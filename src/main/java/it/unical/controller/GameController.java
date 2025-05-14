@@ -1,5 +1,6 @@
 package it.unical.controller;
 
+import it.unical.ai.AIPlayer;
 import it.unical.gui.GameFrame;
 import it.unical.gui.GamePanel;
 import it.unical.model.*;
@@ -8,7 +9,7 @@ import java.awt.Dimension;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.swing.Timer;
+import javax.swing.*;
 
 public class GameController {
 
@@ -38,6 +39,21 @@ public class GameController {
         // Inizializza il timer di gioco
         gameTimer = new Timer(UPDATE_RATE, e -> update());
     }
+
+
+
+
+    // Modifica il metodo sendFleet se necessario per assicurarti che rimanga sempre almeno una nave
+    public void sendFleet(StarSystem source, StarSystem target, int ships) {
+        // Assicurati di mantenere almeno una nave nel sistema di origine
+        int shipsToSend = Math.min(ships, source.getShips() - 1);
+
+        if (shipsToSend > 0) {
+            Player humanPlayer = gameState.getHumanPlayer();
+            gameState.sendFleet(humanPlayer, source, target, shipsToSend);
+        }
+    }
+
 
     public int getSendPerc() {
         return sendPerc;
@@ -95,10 +111,8 @@ public class GameController {
         // Incrementa il contatore di tick
         tickCounter++;
 
-        // Aggiorna lo stato del gioco
+        // Aggiorna lo stato del gioco e le flotte
         gameState.updateGameState();
-
-        // Aggiorna le flotte (movimento)
         gameState.getGameMap().updateFleets(0.3);
 
         if (tickCounter % (200/(gameState.getPlayers().size()-1)) == 0) {
@@ -111,10 +125,25 @@ public class GameController {
             gameFrame.updateUI();
         }
 
-        // Controlla se il gioco è finito
+        // Game Over!
         if (gameState.isGameOver()) {
             gameTimer.stop();
-            System.out.println("Game Over! Il vincitore è: " + gameState.getWinner().getName());
+            String winner = gameState.getWinner().getName();
+            System.out.println("Game Over! Il vincitore è: " + winner);
+
+            // Mostra dialog e torna al menu principale
+            SwingUtilities.invokeLater(() -> {
+                JOptionPane.showMessageDialog(
+                        gameFrame,
+                        "Game Over! Ha vinto: " + winner,
+                        "Game Over",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                // Chiude la finestra di gioco
+                gameFrame.dispose();
+                // Riapre il menu principale
+                new it.unical.gui.MainMenuFrame();
+            });
         }
     }
 
@@ -128,11 +157,11 @@ public class GameController {
         }
     }
 
-    // Invia una flotta da un sistema a un altro (per il giocatore umano)
-    public void sendFleet(StarSystem source, StarSystem target, int ships) {
-        Player humanPlayer = gameState.getHumanPlayer();
-        gameState.sendFleet(humanPlayer, source, target, ships);
-    }
+//    // Invia una flotta da un sistema a un altro (per il giocatore umano)
+//    public void sendFleet(StarSystem source, StarSystem target, int ships) {
+//        Player humanPlayer = gameState.getHumanPlayer();
+//        gameState.sendFleet(humanPlayer, source, target, ships);
+//    }
 
     // Getters
     public GameState getGameState() {

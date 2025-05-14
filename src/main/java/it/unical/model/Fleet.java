@@ -21,6 +21,10 @@ public class Fleet {
         this.speed = speed;
     }
 
+    public void setShips(int ships) {
+        this.ships = ships;
+    }
+
     // Metodo per aggiornare la posizione della flotta
     public void update(double deltaTime) {
         progress += speed * deltaTime;

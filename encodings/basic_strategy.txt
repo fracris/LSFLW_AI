@@ -3,6 +3,9 @@
 % -------------------
 
 my_system(S)   :- system(S), owner(S,P), ai_player(P).
+
+% nei livelli successivi al primo quando abbiamo piu plater ai ogni player ai
+% deve essere cooperativo tra di loro e competitivi contro il nemico cioe tra un player non ai
 enemy_system(S):- system(S), owner(S,P), not ai_player(P), not neutral(S).
 neutral_system(S):- neutral(S).
 
@@ -36,13 +39,31 @@ send_fleet(M,S,Ships) :-
 send_fleet(M,S,Ships) :-
     my_system(M),
     my_system(S),
+    esisteNaveNemicaMaggiore(S),
+    naveSicura(M),
     M != S,
     undirected_connected(M,S),
     ships(M,MyShips),
     ships(S,TargetShips),
-    MyShips > 20,
-    TargetShips < 10,
+    MyShips > TargetShips,
     Ships = MyShips / 2.
+
+naveSicura(M) :-
+    my_system(M),
+    not intornoNemici(M).
+
+intornoNemici(M) :-
+    my_system(M),
+    enemy_system(N),
+    undirected_connected(N,M).
+
+esisteNaveNemicaMaggiore(S) :-
+    my_system(S),
+    enemy_system(N),
+    undirected_connected(N,S),
+    ships(S,Myships),
+    ships(N,Enemyships),
+    Myships < Enemyships.
 
 % Weak Constraint 1: Penalizza il rinforzo di sistemi deboli
 :~ send_fleet(M,S,Ships),
