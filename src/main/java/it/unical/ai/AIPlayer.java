@@ -19,7 +19,7 @@ public class AIPlayer {
     private Difficulty difficulty;
     private Player player;
     private GameState gameState;
-    private String aspStrategy = "encodings/easy.txt";
+    private String aspStrategy;
 
     private boolean isInitialized;
     // Directory per salvare i log dei fatti ASP
@@ -33,8 +33,34 @@ public class AIPlayer {
         this.player = player;
         this.gameState = gameState;
         this.difficulty = difficulty;
+
+        int enemySystemCount=gameState.getAiPlayers().size();
+        int neutralSystemCount=gameState.getGameMap().getSystems().size()-gameState.getPlayers().size();
+        int myShipsTotal= player.getTotalShips();
+        int enemyShipsTotal=0;
+        Map<Integer,int[]> specMetrics = new HashMap<>();
+        int[][] specificMetrics = new int[gameState.getAiPlayers().size()][2];
+        int count=0;
+//        for(Player p:gameState.getPlayers()) {
+//            if(player.getId()!=p.getId()) {
+//                System.out.println(p.getId() + " " + p.getName());
+//                specificMetrics[count][0] = p.getOwnedSystems().size();
+//                specificMetrics[count][1] = p.getTotalShips();
+//                enemyShipsTotal += p.getTotalShips();
+//                count++;
+//            }
+//        }
+        for(Player p:gameState.getPlayers()) {
+            if(player.getId()!=p.getId()) {
+                System.out.println(p.getId() + " " + p.getName());
+                specMetrics.put(p.getId(),new int[]{p.getOwnedSystems().size(),p.getTotalShips()});
+                enemyShipsTotal += p.getTotalShips();
+                count++;
+            }
+        }
+        enemyShipsTotal-=player.getTotalShips();
         // Inizializza le metriche con i valori predefiniti
-        this.previousMetrics = new PreviousGameMetrics();
+        this.previousMetrics = new PreviousGameMetrics(1,enemySystemCount,neutralSystemCount,myShipsTotal,enemyShipsTotal,specMetrics);
 
         if (!player.isAI()) {
             System.err.println("ATTENZIONE: AIPlayer assegnato a un giocatore non IA");

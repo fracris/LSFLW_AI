@@ -40,9 +40,9 @@ public class MainMenuFrame extends JFrame {
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
         title.setForeground(new Color(200, 200, 255, 0));
 
-        AnimatedButton playButton = new AnimatedButton("Play");
+        JButton playButton = new JButton("Play");
         playButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        playButton.setMaximumSize(new Dimension(150, 50));
+        playButton.setPreferredSize(new Dimension(150, 30));
         playButton.addActionListener(e -> {
             new LevelSelectionFrame();
             dispose();
@@ -121,16 +121,13 @@ public class MainMenuFrame extends JFrame {
 
         private void animateScale(float target) {
             Timer timer = new Timer(15, null);
-            timer.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    scale += (target - scale) * 0.2f;
-                    if (Math.abs(scale - target) < 0.01f) {
-                        scale = target;
-                        ((Timer)e.getSource()).stop();
-                    }
-                    repaint();
+            timer.addActionListener(e -> {
+                scale += (target - scale) * 0.2f;
+                if (Math.abs(scale - target) < 0.01f) {
+                    scale = target;
+                    ((Timer)e.getSource()).stop();
                 }
+                repaint();
             });
             timer.start();
         }
