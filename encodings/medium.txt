@@ -163,13 +163,6 @@ my_ships_average(Avg) :-
 % previous_my_ships_total(N).
 % previous_enemy_ships_total(N).
 
-% Se non esistono dati precedenti, usa valori di default
-% previous_my_system_count(1) :- not previous_my_system_count(_).
-% previous_enemy_system_count(1) :- not previous_enemy_system_count(_).
-% previous_neutral_system_count(8) :- not previous_neutral_system_count(_).
-% previous_my_ships_total(110) :- not previous_my_ships_total(_).
-% previous_enemy_ships_total(110) :- not previous_enemy_ships_total(_).
-
 % ================================
 % REGOLE DI SELEZIONE STRATEGIA
 % ================================
@@ -209,7 +202,7 @@ enemy_strengthened :-
 outnumbered :-
     my_ships_total(MyTotal),
     enemy_ships_total(EnemyTotal),
-    MyTotal < EnemyTotal.
+    MyTotal < EnemyTotal * 2.
 
 superior :-
     my_ships_total(MyTotal),
@@ -226,9 +219,9 @@ use_aggressive :- superior, enemy_weakened.
 use_aggressive :- superior, systems_gained.
 
 % Scegli la strategia difensiva quando siamo in svantaggio o abbiamo perso terreno
-% use_defensive :- outnumbered, not superior.
-% use_defensive :- ships_decreased, not superior.
-% use_defensive :- systems_lost, not superior.
+use_defensive :- outnumbered, not superior.
+use_defensive :- ships_decreased, not superior.
+use_defensive :- systems_lost, not superior.
 
 
 % Scegli la strategia tecnologica quando c'è equilibrio e opportunità di crescita

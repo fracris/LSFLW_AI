@@ -5,12 +5,17 @@ import it.unical.model.GameState;
 import it.unical.model.Player;
 import it.unical.model.StarSystem;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class PreviousGameMetrics {
     private int mySystemCount;
     private int enemySystemCount;
     private int neutralSystemCount;
     private int myShipsTotal;
     private int enemyShipsTotal;
+    private Map<Integer,Integer> specificEnemySystemCount = new HashMap<>();
+    private Map<Integer,Integer> specificEnemyShipsTotal = new HashMap<>();
 
     // Costruttore con valori predefiniti
     public PreviousGameMetrics() {
@@ -24,12 +29,18 @@ public class PreviousGameMetrics {
 
     // Costruttore completo
     public PreviousGameMetrics(int mySystemCount, int enemySystemCount, int neutralSystemCount,
-                               int myShipsTotal, int enemyShipsTotal) {
+                               int myShipsTotal, int enemyShipsTotal, Map<Integer,int[]> specificMetrics) {
         this.mySystemCount = mySystemCount;
         this.enemySystemCount = enemySystemCount;
         this.neutralSystemCount = neutralSystemCount;
         this.myShipsTotal = myShipsTotal;
         this.enemyShipsTotal = enemyShipsTotal;
+        for(int key:specificMetrics.keySet()) {
+            specificEnemySystemCount.put(key,specificMetrics.get(key)[0]);
+            specificEnemyShipsTotal.put(key,specificMetrics.get(key)[1]);
+            System.out.print(key + " " + specificEnemySystemCount.get(key) + " " + specificEnemyShipsTotal.get(key));
+            System.out.println();
+        }
     }
 
     // Getter e setter
@@ -81,6 +92,10 @@ public class PreviousGameMetrics {
         facts.append("previous_neutral_system_count(").append(neutralSystemCount).append(").\n");
         facts.append("previous_my_ships_total(").append(myShipsTotal).append(").\n");
         facts.append("previous_enemy_ships_total(").append(enemyShipsTotal).append(").\n");
+        for(int i: specificEnemySystemCount.keySet()){
+            facts.append("previous_enemy_system_count(").append(i).append(",").append(specificEnemySystemCount.get(i)).append(").\n");
+            facts.append("previous_enemy_ships_total(").append(i).append(",").append(specificEnemyShipsTotal.get(i)).append(").\n");
+        }
         return facts.toString();
     }
 
@@ -118,5 +133,16 @@ public class PreviousGameMetrics {
         this.neutralSystemCount = neutralSystemCount;
         this.myShipsTotal = myShipsTotal;
         this.enemyShipsTotal = enemyShipsTotal;
+
+        for(Player p:gameState.getPlayers()) {
+            if(player.getId()!=p.getId()) {
+                System.out.print(p.getName()+ ": ");
+                specificEnemySystemCount.put(p.getId(),p.getOwnedSystems().size());
+                specificEnemyShipsTotal.put(p.getId(),p.getTotalShips());
+                System.out.println("Sistemi: " + specificEnemySystemCount.get(p.getId()) + ", Navi: " + specificEnemyShipsTotal.get(p.getId()));
+                enemyShipsTotal += p.getTotalShips();
+            }
+        }
+
     }
 }
