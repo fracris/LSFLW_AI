@@ -80,6 +80,74 @@ public class AIPlayer {
         }
     }
 
+//    public void performTurn() {
+//        if (!isInitialized) {
+//            System.err.println("AIPlayer non inizializzato, impossibile eseguire il turno");
+//            return;
+//        }
+//
+//        try {
+//            // Genera i fatti ASP
+//            String aspFacts = convertGameStateToASP();
+//
+//            // *** STAMPA I FATTI ASP PER DEBUG ***
+//            System.out.println("--- ASP Facts START ---");
+//            System.out.println(aspFacts);
+//            System.out.println("--- ASP Facts END ---\n");
+//
+//            // Salva i fatti ASP in un file (solo per log)
+//            saveAspFactsToFile(aspFacts);
+//
+//            // Creazione del handler
+//            Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+//
+//            // Imposta la strategia ASP
+//            InputProgram strategyProgram = new ASPInputProgram();
+//            strategyProgram.addFilesPath(aspStrategy);
+//            handler.addProgram(strategyProgram);
+//
+//            // Imposta i fatti del gioco
+//            InputProgram factsProgram = new ASPInputProgram();
+//            factsProgram.addProgram(aspFacts);
+//            handler.addProgram(factsProgram);
+//
+//            // Esegue DLV2
+//            Output output = handler.startSync();
+//
+//            // *** STAMPA L'OUTPUT DLV PER DEBUG ***
+//            if (output != null) {
+//                System.out.println("--- DLV Output START ---");
+//                System.out.println(output.getOutput());
+//                System.out.println("--- DLV Output END ---\n");
+//            }
+//
+//            if (output == null || (output.getErrors() != null && !output.getErrors().isEmpty())) {
+//                System.err.println("Errore durante l'esecuzione di EMBASP: " + output.getErrors());
+//                return;
+//            }
+//
+//            // Estrazione e interpretazione degli answer set
+//            List<String> actions = parseAnswerSets(output.getOutput());
+//
+//            // Salva anche gli answer set trovati
+//            //saveAnswerSetsToFile(output.getOutput());
+//
+//            if (!actions.isEmpty()) {
+//                executeActionsFromStrings(actions);
+//            } else {
+//                System.out.println("Nessun answer set valido trovato per " + player.getName());
+//            }
+//
+//            // Aggiorna le metriche precedenti con lo stato corrente del gioco
+//            // (da fare dopo l'esecuzione delle azioni per il prossimo turno)
+//            previousMetrics.updateFromGameState(gameState, player);
+//
+//        } catch (Exception e) {
+//            System.err.println("Errore durante il turno IA: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
+
     public void performTurn() {
         if (!isInitialized) {
             System.err.println("AIPlayer non inizializzato, impossibile eseguire il turno");
@@ -87,66 +155,102 @@ public class AIPlayer {
         }
 
         try {
-            // Genera i fatti ASP
             String aspFacts = convertGameStateToASP();
+            saveAspFactsToFile(aspFacts);  // per log
 
-            // *** STAMPA I FATTI ASP PER DEBUG ***
-            System.out.println("--- ASP Facts START ---");
-            System.out.println(aspFacts);
-            System.out.println("--- ASP Facts END ---\n");
-
-            // Salva i fatti ASP in un file (solo per log)
-            //saveAspFactsToFile(aspFacts);
-
-            // Creazione del handler
-            Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-
-            // Imposta la strategia ASP
-            InputProgram strategyProgram = new ASPInputProgram();
-            strategyProgram.addFilesPath(aspStrategy);
-            handler.addProgram(strategyProgram);
-
-            // Imposta i fatti del gioco
-            InputProgram factsProgram = new ASPInputProgram();
-            factsProgram.addProgram(aspFacts);
-            handler.addProgram(factsProgram);
-
-            // Esegue DLV2
-            Output output = handler.startSync();
-
-            // *** STAMPA L'OUTPUT DLV PER DEBUG ***
-            if (output != null) {
-                System.out.println("--- DLV Output START ---");
-                System.out.println(output.getOutput());
-                System.out.println("--- DLV Output END ---\n");
-            }
-
-            if (output == null || (output.getErrors() != null && !output.getErrors().isEmpty())) {
-                System.err.println("Errore durante l'esecuzione di EMBASP: " + output.getErrors());
-                return;
-            }
-
-            // Estrazione e interpretazione degli answer set
-            List<String> actions = parseAnswerSets(output.getOutput());
-
-            // Salva anche gli answer set trovati
-            //saveAnswerSetsToFile(output.getOutput());
-
-            if (!actions.isEmpty()) {
+            if (difficulty instanceof Difficulty.Easy) {
+                // ----------------------------
+                // Solo Easy → one‐shot con easy.dlv
+                // ----------------------------
+                List<String> actions = runDlv(
+                        aspFacts,
+                        "encodings/easy.txt",       // il tuo file di regole per il livello Easy
+                        Collections.emptyList()  // nessun fatto extra
+                );
                 executeActionsFromStrings(actions);
+
             } else {
-                System.out.println("Nessun answer set valido trovato per " + player.getName());
+                // ---------------------------------------------------
+                // Hard/Medium → prima scegli la strategia, poi exec
+                // ---------------------------------------------------
+
+                // 1) Round chooser
+                List<String> stratAnswer = runDlv(
+                        aspFacts,
+                        "encodings/choose_strategy.asp",   // contiene solo la logica choose(E,S)
+                        Collections.emptyList()
+                );
+
+                // Estrai il fatto strategy(...) dall’answer set
+                // Es. strategy(aggressive).
+                String chosenStrategyFact = parseStrategyFact(stratAnswer);
+                System.out.println("Strategia scelta: " + chosenStrategyFact);
+
+                // 2) Round executor
+                // Inietto nei fatti anche la strategia scelta
+                List<String> extraFacts = Collections.singletonList(chosenStrategyFact);
+
+                List<String> actions = runDlv(
+                        aspFacts,
+                        "encodings/medium_strategy.asp",     // regole che generano send/3, usa anche strategy/1 come input
+                        extraFacts
+                );
+                executeActionsFromStrings(actions);
             }
 
-            // Aggiorna le metriche precedenti con lo stato corrente del gioco
-            // (da fare dopo l'esecuzione delle azioni per il prossimo turno)
+            // Alla fine aggiorni metrics e torni
             previousMetrics.updateFromGameState(gameState, player);
 
         } catch (Exception e) {
-            System.err.println("Errore durante il turno IA: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
+    /**
+     * Invoca DLV2 tramite EMBASP, ritorna gli answer‐set come lista di stringhe.
+     */
+    private List<String> runDlv(String factsProgram,
+                                String dlvFilePath,
+                                List<String> extraFacts) throws Exception {
+        Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+
+        // 1) il file di regole
+        ASPInputProgram rules = new ASPInputProgram();
+        rules.addFilesPath(dlvFilePath);
+        handler.addProgram(rules);
+
+        // 2) i fatti di gioco
+        ASPInputProgram facts = new ASPInputProgram();
+        facts.addProgram(factsProgram);
+        for (String f : extraFacts) {
+            facts.addProgram(f + ".");
+        }
+        handler.addProgram(facts);
+
+        // 3) esegui
+        Output output = handler.startSync();
+        if (output == null || output.getErrors() != null && !output.getErrors().isEmpty()) {
+            throw new RuntimeException("DLV errors: " + output.getErrors());
+        }
+        // suddividi l’output in righe o answer‐set
+        return parseAnswerSets(output.getOutput());
+    }
+
+    /**
+     * Esempio: da ["strategy(aggressive).", ...] estrae "strategy(aggressive)"
+     */
+    private String parseStrategyFact(List<String> answerSets) {
+        for (String line : answerSets) {
+            if (line.startsWith("chosen_strategy(")) {
+                // togli trailing punto
+                return line.endsWith(".")
+                        ? line.substring(0, line.length()-1)
+                        : line;
+            }
+        }
+        throw new IllegalStateException("Nessuna strategy trovata!");
+    }
+
 
     // Metodo per salvare i fatti ASP in un file
     private void saveAspFactsToFile(String aspFacts) {
