@@ -2,14 +2,6 @@
 % PROGRAMMA 2: ESECUZIONE STRATEGIA (VERSIONE SEMPLIFICATA)
 % ================================
 
-% Aggiungiamo il fatto mancante
-ai_player(2).
-
-% La base di fatti rimane invariata (non mostrata qui per brevità)
-% ...
-
-% Strategia scelta
-chosen_strategy(aggressive).
 
 % Definizioni di base per i sistemi
 my_system(S) :- system(S), owner(S,P), ai_player(P).
