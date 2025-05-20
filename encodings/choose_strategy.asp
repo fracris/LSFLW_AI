@@ -2,7 +2,7 @@
 % PROGRAMMA 1: SELEZIONE STRATEGIA
 % ================================
 
-% Definizioni di base per i sistemi
+% Definizioni di base per i sistemi (invariate)
 my_system(S) :- system(S), owner(S,P), ai_player(P).
 enemy(P) :- system(S), owner(S,P), not ai_player(P), P != 0.
 enemy_system(S,P) :- system(S), owner(S,P), not ai_player(P), P != 0.
@@ -22,37 +22,29 @@ border_system(S) :-
 high_production_system(S) :-
     system(S),
     production(S,P),
-    P >= 2.  % Modificato da 5 a 2 in base ai dati forniti
+    P >= 2.
 
 % ================================
 % ANALISI DELLO STATO DEL GIOCO PER GIOCATORE
 % ================================
-
-% Conta i sistemi posseduti dal giocatore IA
 count_my_systems(S) :- my_system(S).
 my_system_count(C) :- #count{S : count_my_systems(S)} = C.
 
-% Conta i sistemi per ogni nemico
 count_enemy_systems(S,P) :- enemy_system(S,P).
 enemy_system_count(P,C) :- enemy(P), #count{S : count_enemy_systems(S,P)} = C.
 
-% Conta i sistemi neutrali
 count_neutral_systems(S) :- neutral_system(S).
 neutral_system_count(C) :- #count{S : count_neutral_systems(S)} = C.
 
-% Somma le navi dell'IA
 sum_my_ships(Ships,S) :- my_system(S), ships(S,Ships).
 my_ships_total(T) :- #sum{Ships,S : sum_my_ships(Ships,S)} = T.
 
-% Somma le navi per ogni nemico
 sum_enemy_ships(Ships,S,P) :- enemy_system(S,P), ships(S,Ships).
 enemy_ships_total(P,T) :- enemy(P), #sum{Ships,S : sum_enemy_ships(Ships,S,P)} = T.
 
 % ================================
 % VALUTAZIONE PER OGNI NEMICO
 % ================================
-
-% Definisci le condizioni strategiche per ogni nemico
 outnumbered(P) :-
     enemy(P),
     my_ships_total(MyTotal),
@@ -65,7 +57,6 @@ superior(P) :-
     enemy_ships_total(P,EnemyTotal),
     MyTotal * 10 > EnemyTotal * 13.
 
-% Confronto con stato precedente per ogni nemico
 enemy_weakened(P) :-
     enemy(P),
     enemy_ships_total(P, Current),
@@ -78,10 +69,8 @@ enemy_strengthened(P) :-
     previous_enemy_ships_total(P, Previous),
     Current > Previous.
 
-% Opportunità di espansione
 neutral_opportunity :- neutral_system_count(Count), Count > 0.
 
-% Situazione generale
 systems_gained :-
     my_system_count(Current),
     previous_my_system_count(Previous),
@@ -103,10 +92,22 @@ ships_decreased :-
     Current < Previous.
 
 % ================================
+% CLASSIFICAZIONE DELLE STRATEGIE
+% ================================
+% Definizione delle categorie di strategie
+enemy_oriented_strategy(aggressive).
+enemy_oriented_strategy(defensive).
+
+global_strategy(expansion).
+global_strategy(consolidation).
+% -- rimossa global_strategy(technological).
+
+strategy(S) :- enemy_oriented_strategy(S).
+strategy(S) :- global_strategy(S).
+
+% ================================
 % CANDIDATI STRATEGIA PER OGNI NEMICO
 % ================================
-
-% Possibili strategie per ogni nemico
 candidate_aggressive(P) :- superior(P), enemy_weakened(P).
 candidate_aggressive(P) :- superior(P), systems_gained.
 
@@ -114,98 +115,75 @@ candidate_defensive(P) :-
     enemy(P),
     outnumbered(P), not superior(P),
     my_ships_total(MT), enemy_ships_total(P,ET),
-    MT*10 > ET*7.  % Svantaggio limitato (almeno il 70% della forza nemica)
+    MT*10 > ET*7.
 
 candidate_defensive(P) :-
     enemy(P),
     enemy_strengthened(P), not superior(P),
     not systems_lost.
 
-candidate_technological(P) :-
-    enemy(P),
-    not outnumbered(P),
-    not superior(P),
-    neutral_opportunity,
-    not systems_lost.
+% ================================
+% CANDIDATI STRATEGIA GLOBALE
+% ================================
+% candidate_technological.  % eliminato
+candidate_expansion :- ships_increased, neutral_opportunity.
+candidate_consolidation :- systems_gained, my_system_count(Count), Count > 2.
 
-candidate_expansion(P) :-
-    enemy(P),
-    ships_increased,
-    not systems_gained,
-    neutral_opportunity.
-
-candidate_consolidation(P) :-
-    enemy(P),
-    systems_gained,
-    my_system_count(Count),
-    Count > 2.
-
-% Strategia di default per ogni nemico se nessuna condizione è soddisfatta
-candidate_expansion(P) :-
-    enemy(P),
-    not candidate_aggressive(P),
-    not candidate_defensive(P),
-    not candidate_technological(P),
-    not candidate_consolidation(P).
+% Strategia di default se nessuna condizione è soddisfatta
+candidate_expansion :- not candidate_consolidation.
+% (technological non è più considerata)
 
 % ================================
-% SCELTA DELLA STRATEGIA FINALE
+% CALCOLO DEI PESI DELLE STRATEGIE NEMICHE
 % ================================
-
-% Definisci le possibili strategie
-strategy(aggressive).
-strategy(defensive).
-strategy(technological).
-strategy(expansion).
-strategy(consolidation).
-
-% Seleziona una strategia se livello è medio, due se è difficile
-{ chosen_strategy(S) : strategy(S) } = 1 :- difficulty(medium).
-{ chosen_strategy(S) : strategy(S) } =  2 :- difficulty(hard).
-
-% ================================
-% CALCOLO DEI PESI DELLE STRATEGIE
-% ================================
-
-% Calcola il "peso" di ogni strategia in base al numero di nemici che la suggeriscono
 count_aggressive(P) :- candidate_aggressive(P).
 strategy_weight(aggressive, W) :- #count{P : count_aggressive(P)} = W.
 
 count_defensive(P) :- candidate_defensive(P).
 strategy_weight(defensive, W) :- #count{P : count_defensive(P)} = W.
 
-count_technological(P) :- candidate_technological(P).
-strategy_weight(technological, W) :- #count{P : count_technological(P)} = W.
+% ================================
+% CALCOLO DEI PESI DELLE STRATEGIE GLOBALI
+% ================================
+strategy_weight(expansion, 1) :- candidate_expansion.
+strategy_weight(expansion, 0) :- not candidate_expansion.
 
-count_expansion(P) :- candidate_expansion(P).
-strategy_weight(expansion, W) :- #count{P : count_expansion(P)} = W.
+strategy_weight(consolidation, 1) :- candidate_consolidation.
+strategy_weight(consolidation, 0) :- not candidate_consolidation.
 
-count_consolidation(P) :- candidate_consolidation(P).
-strategy_weight(consolidation, W) :- #count{P : count_consolidation(P)} = W.
+% ================================
+% POTENZIATORI PER STRATEGIE GLOBALI
+% ================================
+% boost_technological.  % eliminato
+boost_expansion :- neutral_opportunity, ships_increased.
+boost_consolidation :- systems_gained, ships_increased.
 
-has_weight(S) :- strategy_weight(S, W).
+% ================================
+% SCELTA DELLA STRATEGIA FINALE
+% ================================
+{ chosen_strategy(S) : strategy(S) } = 1 :- difficulty(medium).
 
-strategy_weight(S, 0) :- strategy(S), not has_weight(S).
-
+{ chosen_strategy(S) : enemy_oriented_strategy(S) } = 1 :- difficulty(hard).
+{ chosen_strategy(S) : global_strategy(S) } = 1 :- difficulty(hard).
 
 % ================================
 % PREFERENZE PER LA SCELTA
 % ================================
+:~ chosen_strategy(S), enemy_oriented_strategy(S), strategy_weight(S, W). [-W@2]
 
-% Preferisci le strategie con peso maggiore (più nemici la suggeriscono)
-:~ chosen_strategy(S), strategy_weight(S, W). [-W@1]
+% :~ chosen_strategy(technological), boost_technological. [-3@1]  % eliminato
+:~ chosen_strategy(expansion), boost_expansion. [-2@1]
+:~ chosen_strategy(consolidation), boost_consolidation. [-2@1]
 
 % Priorità addizionali per situazioni specifiche
-:~ chosen_strategy(defensive), systems_lost. [-3@2]
-:~ chosen_strategy(aggressive), superior(P). [-2@2]
-:~ chosen_strategy(consolidation), ships_increased. [-2@2]
-:~ chosen_strategy(technological), high_production_system(S), neutral_system(S). [-2@2]
-:~ chosen_strategy(expansion), neutral_opportunity. [-1@2]
+:~ chosen_strategy(defensive), systems_lost. [-3@3]
+:~ chosen_strategy(aggressive), enemy(P), superior(P). [-2@3]
+% :~ chosen_strategy(technological), high_production_system(S), neutral_system(S). [-2@3]  % eliminato
+:~ chosen_strategy(expansion), neutral_opportunity. [-1@3]
 
 % ================================
 % OUTPUT
 % ================================
-
 #show chosen_strategy/1.
 #show my_system_count/1.
 #show enemy_system_count/2.

@@ -269,9 +269,9 @@ public class AIPlayer {
         aspFacts += "difficulty(" + difficultyLevel + ").\n";
 
         // Debug: stampa i fatti ASP per la fase 1
-        System.out.println("--- ASP Facts (Phase 1) START ---");
-        System.out.println(aspFacts);
-        System.out.println("--- ASP Facts (Phase 1) END ---\n");
+//        System.out.println("--- ASP Facts (Phase 1) START ---");
+//        System.out.println(aspFacts);
+//        System.out.println("--- ASP Facts (Phase 1) END ---\n");
 
         // Salva i fatti ASP della fase 1 in un file
         saveAspFactsToFile(aspFacts);
@@ -327,12 +327,12 @@ public class AIPlayer {
         }
 
         // Debug: stampa i fatti ASP per la fase 2
-        System.out.println("--- ASP Facts (Phase 2) START ---");
-        System.out.println(enhancedFacts.toString());
-        System.out.println("--- ASP Facts (Phase 2) END ---\n");
+//        System.out.println("--- ASP Facts (Phase 2) START ---");
+//        System.out.println(enhancedFacts.toString());
+//        System.out.println("--- ASP Facts (Phase 2) END ---\n");
 
         // Salva i fatti ASP della fase 2 in un file
-        saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
+        //saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
 
         // Configura il solver DLV per la fase 2
         Handler executionHandler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
