@@ -318,58 +318,68 @@ public class AIPlayer {
         // Debug: stampa le strategie scelte
         System.out.println("Strategie scelte: " + chosenStrategies);
 
-        // FASE 2: Esegui la strategia scelta
-
-        // Aggiungi le strategie scelte ai fatti ASP
-        StringBuilder enhancedFacts = new StringBuilder(aspFacts);
-        for (String strategy : chosenStrategies) {
-            enhancedFacts.append(strategy).append(".\n");
-        }
-
-        // Debug: stampa i fatti ASP per la fase 2
-//        System.out.println("--- ASP Facts (Phase 2) START ---");
-//        System.out.println(enhancedFacts.toString());
-//        System.out.println("--- ASP Facts (Phase 2) END ---\n");
-
-        // Salva i fatti ASP della fase 2 in un file
-        //saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
-
-        // Configura il solver DLV per la fase 2
-        Handler executionHandler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-
-        // Imposta la strategia ASP per l'esecuzione
-        InputProgram executionProgram = new ASPInputProgram();
-        executionProgram.addFilesPath(aspStrategy);
-        executionHandler.addProgram(executionProgram);
-
-        // Imposta i fatti del gioco con le strategie scelte
-        InputProgram factsProgramPhase2 = new ASPInputProgram();
-        factsProgramPhase2.addProgram(enhancedFacts.toString());
-        executionHandler.addProgram(factsProgramPhase2);
-
-        // Esegue DLV2 per la fase 2
-        Output outputPhase2 = executionHandler.startSync();
-
-        // Debug: stampa l'output DLV della fase 2
-        if (outputPhase2 != null) {
-            System.out.println("--- DLV Output (Phase 2) START ---");
-            System.out.println(outputPhase2.getOutput());
-            System.out.println("--- DLV Output (Phase 2) END ---\n");
-        }
-
-        if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
-            System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2): " + outputPhase2.getErrors());
-            return;
-        }
-
         // Estrazione e interpretazione degli answer set della fase 2
-        List<String> actions = parseAnswerSets(outputPhase2.getOutput());
+        List<String> actions = parseAnswerSets(outputPhase1.getOutput());
 
         if (!actions.isEmpty()) {
             executeActionsFromStrings(actions);
-        } else {
+        }
+        else {
             System.out.println("Nessun answer set valido trovato per " + player.getName() + " nella fase 2");
         }
+
+//        // FASE 2: Esegui la strategia scelta
+//
+//        // Aggiungi le strategie scelte ai fatti ASP
+//        StringBuilder enhancedFacts = new StringBuilder(aspFacts);
+//        for (String strategy : chosenStrategies) {
+//            enhancedFacts.append(strategy).append(".\n");
+//        }
+//
+//        // Debug: stampa i fatti ASP per la fase 2
+////        System.out.println("--- ASP Facts (Phase 2) START ---");
+////        System.out.println(enhancedFacts.toString());
+////        System.out.println("--- ASP Facts (Phase 2) END ---\n");
+//
+//        // Salva i fatti ASP della fase 2 in un file
+//        //saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
+//
+//        // Configura il solver DLV per la fase 2
+//        Handler executionHandler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+//
+//        // Imposta la strategia ASP per l'esecuzione
+//        InputProgram executionProgram = new ASPInputProgram();
+//        executionProgram.addFilesPath(aspStrategy);
+//        executionHandler.addProgram(executionProgram);
+//
+//        // Imposta i fatti del gioco con le strategie scelte
+//        InputProgram factsProgramPhase2 = new ASPInputProgram();
+//        factsProgramPhase2.addProgram(enhancedFacts.toString());
+//        executionHandler.addProgram(factsProgramPhase2);
+//
+//        // Esegue DLV2 per la fase 2
+//        Output outputPhase2 = executionHandler.startSync();
+//
+//        // Debug: stampa l'output DLV della fase 2
+//        if (outputPhase2 != null) {
+//            System.out.println("--- DLV Output (Phase 2) START ---");
+//            System.out.println(outputPhase2.getOutput());
+//            System.out.println("--- DLV Output (Phase 2) END ---\n");
+//        }
+//
+//        if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
+//            System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2): " + outputPhase2.getErrors());
+//            return;
+//        }
+//
+//        // Estrazione e interpretazione degli answer set della fase 2
+//        List<String> actions = parseAnswerSets(outputPhase2.getOutput());
+//
+//        if (!actions.isEmpty()) {
+//            executeActionsFromStrings(actions);
+//        } else {
+//            System.out.println("Nessun answer set valido trovato per " + player.getName() + " nella fase 2");
+//        }
     }
 
     /**
