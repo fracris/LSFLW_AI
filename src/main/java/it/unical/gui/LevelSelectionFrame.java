@@ -45,9 +45,9 @@ public class LevelSelectionFrame extends JFrame {
         // Pulsanti con animazione hover
         Difficulty[] levels = {Difficulty.easy(), Difficulty.medium(), Difficulty.hard()};
         for (Difficulty lvl : levels) {
-            AnimatedButton btn = new AnimatedButton(lvl.toString());
+            JButton btn = new JButton(lvl.toString());
             btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-            btn.setMaximumSize(new Dimension(200, 50));
+            btn.setPreferredSize(new Dimension(200, 30));
             btn.addActionListener(e -> {
                 Main.startGame(lvl);
                 dispose();

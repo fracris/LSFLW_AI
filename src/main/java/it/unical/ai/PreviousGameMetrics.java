@@ -87,13 +87,9 @@ public class PreviousGameMetrics {
     // Metodo per convertire i dati in formato ASP
     public String toAspFacts() {
         StringBuilder facts = new StringBuilder();
-        facts.append("previous_my_system_count(").append(mySystemCount).append(").\n");
-        facts.append("previous_enemy_system_count(").append(enemySystemCount).append(").\n");
-        facts.append("previous_neutral_system_count(").append(neutralSystemCount).append(").\n");
         facts.append("previous_my_ships_total(").append(myShipsTotal).append(").\n");
         facts.append("previous_enemy_ships_total(").append(enemyShipsTotal).append(").\n");
         for(int i: specificEnemySystemCount.keySet()){
-            facts.append("previous_enemy_system_count(").append(i).append(",").append(specificEnemySystemCount.get(i)).append(").\n");
             facts.append("previous_enemy_ships_total(").append(i).append(",").append(specificEnemyShipsTotal.get(i)).append(").\n");
         }
         return facts.toString();
