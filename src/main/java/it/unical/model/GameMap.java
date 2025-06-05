@@ -208,37 +208,6 @@ public class GameMap {
         }
     }
 
-//    // Gestisce l'arrivo di una flotta a destinazione
-//    private void handleFleetArrival(Fleet fleet) {
-//        StarSystem destination = fleet.getDestination();
-//        Player fleetOwner = fleet.getOwner();
-//        int fleetShips = fleet.getShips();
-//
-//        if (destination.getOwner() == null || destination.getOwner() == fleetOwner) {
-//            // Sistema neutrale o amico: aggiungi le navi
-//            destination.addShips(fleetShips);
-//            if (destination.getOwner() == null) {
-//                destination.setOwner(fleetOwner);
-//            }
-//        } else {
-//            // Sistema nemico: battaglia
-//            int defenderShips = destination.getShips();
-//
-//            if (fleetShips > defenderShips) {
-//                // L'attaccante vince
-//                destination.setShips(fleetShips - defenderShips);
-//                destination.setOwner(fleetOwner);
-//            } else {
-//                // Il difensore vince (o pareggio)
-//                destination.setShips(defenderShips - fleetShips);
-//            }
-//        }
-//
-//        // Rimuovi la flotta dopo l'arrivo
-//        fleetOwner.removeFleet(fleet);
-//        fleets.remove(fleet);
-//    }
-
     // Gestisce l'arrivo di una flotta a destinazione
     private void handleFleetArrival(Fleet fleet) {
         StarSystem destination = fleet.getDestination();
@@ -262,6 +231,11 @@ public class GameMap {
                 {
                     defender.setSystemsLost(destination);
                 }
+
+                if(attacker.isAI()){
+                    attacker.setSystemsGained(destination);
+                }
+
                 defender.removeSystem(destination);
                 if(destination.isAutomated()) {
                     destination.setAutomated(false);
@@ -280,30 +254,6 @@ public class GameMap {
         fleets.remove(fleet);
     }
 
-
-    // Aggiorna lo stato di tutte le flotte
-//    public void updateFleets(double deltaTime) {
-//        List<Fleet> arrivedFleets = new ArrayList<>();
-//
-//        // Aggiorna la posizione di tutte le flotte
-//        for (Fleet fleet : fleets) {
-//            fleet.update(deltaTime);
-//
-//            if (fleet.hasArrived()) {
-//                arrivedFleets.add(fleet);
-//            }
-//        }
-//
-//        // Controlla le collisioni tra flotte
-//        checkFleetCollisions();
-//
-//        // Gestisce le flotte arrivate
-//        for (Fleet fleet : arrivedFleets) {
-//            if (fleets.contains(fleet)) { // Verifica che la flotta non sia stata distrutta in una collisione
-//                handleFleetArrival(fleet);
-//            }
-//        }
-//    }
 
     // Nuovo metodo per controllare le collisioni tra flotte
     private void checkFleetCollisions() {

@@ -402,13 +402,21 @@ public class AIPlayer {
             player.getSystemsLost().clear();
         }
 
+        if(player.getSystemsGained()!=null) {
+            for(StarSystem system: player.getSystemsGained()) {
+                facts.append("system_gained(").append(system.getId()).append(").\n");
+            }
+
+            player.getSystemsGained().clear();
+        }
+
         for (StarSystem system : gameState.getGameMap().getSystems()) {
             facts.append("system(").append(system.getId()).append(").\n");
             if (system.getOwner() != null) {
                 facts.append("owner(").append(system.getId()).append(",")
                         .append(system.getOwner().getId()).append(").\n");
             } else {
-                facts.append("neutral(").append(system.getId()).append(").\n");
+                facts.append("neutral_system(").append(system.getId()).append(").\n");
             }
             facts.append("ships(").append(system.getId()).append(",")
                     .append(system.getShips()).append(").\n");
