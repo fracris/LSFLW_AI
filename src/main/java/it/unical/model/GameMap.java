@@ -258,6 +258,10 @@ public class GameMap {
 
             if (fleetShips > defendingShips) {
                 // Conquista
+                if(defender.isAI())
+                {
+                    defender.setSystemsLost(destination);
+                }
                 defender.removeSystem(destination);
                 if(destination.isAutomated()) {
                     destination.setAutomated(false);

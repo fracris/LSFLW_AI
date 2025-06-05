@@ -90,7 +90,7 @@ public class AIPlayer {
         }
 
         // Crea la directory per i log se non esiste
-        //createLogDirectory();
+        createLogDirectory();
 
         this.isInitialized = true;
     }
@@ -394,6 +394,14 @@ public class AIPlayer {
 
         facts.append("ai_player(").append(player.getId()).append(").\n");
 
+        if(player.getSystemsLost()!=null) {
+            for(StarSystem system: player.getSystemsLost()) {
+                facts.append("system_lost(").append(system.getId()).append(").\n");
+            }
+
+            player.getSystemsLost().clear();
+        }
+
         for (StarSystem system : gameState.getGameMap().getSystems()) {
             facts.append("system(").append(system.getId()).append(").\n");
             if (system.getOwner() != null) {
@@ -505,7 +513,7 @@ public class AIPlayer {
 
     private void executeActionsFromStrings(List<String> actions) {
         // Salva le azioni eseguite in un file (solo per log)
-        // saveExecutedActionsToFile(actions);
+        saveExecutedActionsToFile(actions);
 
         boolean executedAny = false;
         for (String atomStr : actions) {

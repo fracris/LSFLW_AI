@@ -1,204 +1,195 @@
-% ================================
-% PROGRAMMA 2: ESECUZIONE STRATEGIA (VERSIONE SEMPLIFICATA)
-% ================================
+% === Parametri ===
+min_defense_ships(8).
+expansion_threshold(10).
+attack_threshold(15).
+
+% === Sistemi strategici ===
+strategic_system(S) :- production(S, P), P > 1.
+
+system(s1). system(s2). system(s3).
+connected(s1, s2). connected(s2, s3).
+
+neighbor(S, T) :- connected(S, T).
+neighbor(S, T) :- connected(T, S).
+
+strategic_connection_count(S, N) :- system(S), #count { T : neighbor(S, T) } = N.
 
 
-% Definizioni di base per i sistemi
-my_system(S) :- system(S), owner(S,P), ai_player(P).
-enemy_system(S) :- system(S), owner(S,P), not ai_player(P), P != 0.
-neutral_system(S) :- system(S), neutral(S).
+strategic_system(S) :- strategic_connection_count(S,N), N > 3.
 
-% Connessione non orientata semplificata
-undirected_connected(M,S) :- connected(M,S).
-undirected_connected(M,S) :- connected(S,M).
+% === Sistemi di frontiera ===
+is_border_system(S) :-
+    ai_player(AI), owner(S, AI),
+    connected(S, T), not owner(T, AI).
 
-% Sistema di confine (vicino a nemici o neutrali)
-border_system(S) :-
-    my_system(S),
-    undirected_connected(S,N),
-    not my_system(N).
+is_border_system(S) :-
+    ai_player(AI), owner(S, AI),
+    connected(T, S), not owner(T, AI).
 
-% Sistema centrale (non di confine)
-central_system(S) :-
-    my_system(S),
-    not border_system(S).
+% === Sistemi interni ===
+is_internal_system(S) :-
+    ai_player(AI), owner(S, AI),
+    not is_border_system(S).
 
-% Sistema con alta produzione - semplificato
-high_production_system(S) :-
-    system(S),
-    production(S,P),
-    P >= 2.
+% === Priorità del sistema ===
+system_priority(S, 3) :- strategic_system(S), is_border_system(S).
+system_priority(S, 2) :- strategic_system(S), is_internal_system(S).
+system_priority(S, 2) :- is_border_system(S), not strategic_system(S).
+system_priority(S, 1) :- is_internal_system(S), not strategic_system(S).
 
-% ===================================
-% DEFINIZIONE DELLE POSSIBILI MOSSE (SEMPLIFICATE)
-% ===================================
+% === Navi necessarie per conquista ===
+neutral_conquest_ships(S, Required) :-
+    neutral(S), ships(S, N), Required = N + 2.
 
-% --- Strategia Aggressiva ---
-possible_move(aggressive, M, S, Ships, Score) :-
-    my_system(M),
-    neutral_system(S),
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    MyShips > 10,
-    Ships = MyShips - 5,
-    production(S,Prod),
-    Score = Prod * 10.
+enemy_conquest_ships(S, Required) :-
+    owner(S, O), ai_player(AI), O != AI,
+    ships(S, N), Required = N + 5.
 
-possible_move(aggressive, M, S, Ships, Score) :-
-    my_system(M),
-    enemy_system(S),
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    ships(S,EnemyShips),
-    MyShips > EnemyShips + 5,
-    Ships = MyShips - 5,
-    production(S,Prod),
-    Score = Prod * 20.
+% === Strategia Difensiva ===
 
-% --- Strategia Difensiva (semplificata) ---
-possible_move(defensive, M, S, Ships, Score) :-
-    my_system(M),
-    my_system(S),
-    M != S,
-    undirected_connected(M,S),
-    border_system(S),
-    ships(M,MyShips),
-    MyShips > 15,
-    Ships = MyShips / 2, % Semplificato a divisione intera
-    Score = 100.
 
-possible_move(defensive, M, S, Ships, Score) :-
-    my_system(M),
-    enemy_system(S),
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    ships(S,EnemyShips),
-    MyShips > EnemyShips + (EnemyShips / 2),
-    Ships = MyShips - 10,
-    Score = 50.
+connected_bidirectional(X, Y) :- connected(X, Y).
+connected_bidirectional(X, Y) :- connected(Y, X).
 
-% --- Strategia Tecnologica (semplificata) ---
-possible_move(technological, M, S, Ships, Score) :-
-    my_system(M),
-    neutral_system(S),
-    high_production_system(S),
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    MyShips > 20,
-    Ships = MyShips - 10,
-    production(S,Prod),
-    Score = Prod * 30.
 
-possible_move(technological, M, S, Ships, Score) :-
-    my_system(M),
-    enemy_system(S),
-    high_production_system(S),
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    ships(S,EnemyShips),
-    MyShips > 20,
-    Ships = MyShips - 10,
-    production(S,Prod),
-    Score = Prod * 30.
+can_send_reinforcement(From, To) :-
+    ai_player(AI),
+    owner(From, AI), owner(To, AI),
+    ships(From, FS), ships(To, TS),
+    min_defense_ships(MD),
+    FS > MD + 5, TS < MD,
+    connected_bidirectional(From, To).
 
-% --- Strategia Espansione (semplificata) ---
-possible_move(expansion, M, S, Ships, Score) :-
-    my_system(M),
-    neutral_system(S),
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    MyShips > 8,
-    Ships = MyShips - 4,
-    Score = 10.
+send_fleet(From, To, Ships) :-
+    chosen_strategy(defensive),
+    can_send_reinforcement(From, To),
+    ships(From, FS), ships(To, TS),
+    min_defense_ships(MD),
+    Needed = MD - TS,
+    Available = FS - MD,
+    Needed <= Available,
+    Ships = Needed.
 
-% --- Strategia Consolidamento (semplificata) ---
-possible_move(consolidation, M, S, Ships, Score) :-
-    my_system(M),
-    my_system(S),
-    M != S,
-    undirected_connected(M,S),
-    ships(M,MyShips),
-    ships(S,TargetShips),
-    MyShips > TargetShips + 10,
-    Ships = MyShips / 3, % Divisione intera semplificata
-    Score = Ships.
+send_fleet(From, To, Ships) :-
+    chosen_strategy(defensive),
+    can_send_reinforcement(From, To),
+    ships(From, FS), ships(To, TS),
+    min_defense_ships(MD),
+    Needed = MD - TS,
+    Available = FS - MD,
+    Needed > Available,
+    Ships = Available.
 
-% ================================
-% SELEZIONE DEL MIGLIOR SEND_FLEET (SEMPLIFICATO)
-% ================================
+% === Strategia Espansione ===
+potential_neutral_target(S, 3, R) :-
+    neutral(S), strategic_system(S),
+    connected(From, S), ai_player(AI), owner(From, AI),
+    neutral_conquest_ships(S, R).
 
-% Genera i candidati send_fleet in base alla strategia scelta
-candidate_send_fleet(M, S, Ships, Score) :-
-    chosen_strategy(Strategy),
-    possible_move(Strategy, M, S, Ships, Score).
+potential_neutral_target(S, 1, R) :-
+    neutral(S), not strategic_system(S),
+    connected(From, S), ai_player(AI), owner(From, AI),
+    neutral_conquest_ships(S, R).
 
-% Scegliamo esattamente una mossa strategica
-{ strategic_send_fleet(M, S, Ships, Score) : candidate_send_fleet(M, S, Ships, Score) } = 1.
+can_attack_from(From, To, Ships) :-
+    ai_player(AI), owner(From, AI), neutral(To),
+    connected(From, To),
+    ships(From, FS), neutral_conquest_ships(To, R),
+    min_defense_ships(MD),
+    FS > R + MD, Ships = R.
 
-% Verifica che non si invii più navi di quelle disponibili
-:- strategic_send_fleet(M, _, Ships, _),
-   ships(M, Total),
-   Ships > Total.
+can_attack_from(From, To, Ships) :-
+    ai_player(AI), owner(From, AI), neutral(To),
+    connected(To, From),
+    ships(From, FS), neutral_conquest_ships(To, R),
+    min_defense_ships(MD),
+    FS > R + MD, Ships = R.
 
-% ================================
-% SEMPLIFICAZIONE DEI RINFORZI AUTOMATICI
-% ================================
 
-% Identifica i sistemi che necessitano rinforzo (solo frontiera)
-needs_reinforcement(S) :-
-    my_system(S),
-    border_system(S).
+send_fleet(From, To, Ships) :-
+    chosen_strategy(expansion),
+    can_attack_from(From, To, Ships),
+    potential_neutral_target(To, _, _).
 
-% 1) Controllo invii già pianificati
-has_send(M) :- strategic_send_fleet(M, _, _, _).
+% === Strategia Attacco ===
+potential_enemy_target(S, 3, R) :-
+    owner(S, O), ai_player(AI), O != AI,
+    connected(From, S), owner(From, AI),
+    enemy_conquest_ships(S, R),
+    strategic_system(S).
 
-% 2) Calcola un terzo delle navi disponibili per M (intero)
-available_third(M, Ships) :-
-    ships(M, MyShips),
-    MyShips > 20,
-    Ships = MyShips / 3.
+potential_enemy_target(S, 1, R) :-
+    owner(S, O), ai_player(AI), O != AI,
+    connected(From, S), owner(From, AI),
+    enemy_conquest_ships(S, R),
+    not strategic_system(S).
 
-% 3) Potenziali donatori (solo sistemi centrali, senza invii già in corso)
-potential_donor(M, Ships) :-
-    my_system(M),
-    central_system(M),
-    not has_send(M),
-    available_third(M, Ships).
+can_attack_enemy_from(From, To, Ships) :-
+    ai_player(AI), owner(From, AI), owner(To, O), O != AI,
+    connected(From, To),
+    ships(From, FS), enemy_conquest_ships(To, R),
+    min_defense_ships(MD), FS > R + MD, Ships = R.
 
-% Genera candidati per rinforzo automatico (semplificato)
-candidate_reinforcement(M, S, Ships) :-
-    potential_donor(M, Available),
-    Ships = Available / 2, % Divisione intera semplificata
-    Ships > 5,
-    my_system(S),
-    border_system(S),
-    undirected_connected(M, S),
-    M != S.
+can_attack_enemy_from(From, To, Ships) :-
+    ai_player(AI), owner(From, AI), owner(To, O), O != AI,
+    connected(To, From),
+    ships(From, FS), enemy_conquest_ships(To, R),
+    min_defense_ships(MD), FS > R + MD, Ships = R.
 
-% Seleziona rinforzi automatici (al massimo 2 per semplificare)
-0 <= { auto_reinforcement(M, S, Ships) : candidate_reinforcement(M, S, Ships) } <=  2.
 
-% Un sistema può essere solo donatore una volta
-:- my_system(M),
-   2 <= #count{S : auto_reinforcement(M, S, _)}.
+send_fleet(From, To, Ships) :-
+    chosen_strategy(aggressive),
+    can_attack_enemy_from(From, To, Ships),
+    potential_enemy_target(To, _, _).
 
-% Un sistema può ricevere al massimo un rinforzo
-:- my_system(S),
-   2 <= #count{M : auto_reinforcement(M, S, _)}.
+% === Strategia Rinforzo ===
+is_high_production_system(S) :- production(S, P), P > 1.
+can_send_border_reinforcement(From, To) :-
+    ai_player(AI), owner(From, AI), owner(To, AI),
+    is_internal_system(From), is_border_system(To),
+    ships(From, FS), FS > 15,
+    connected(From, To).
 
-% Verifica che un sistema non doni più di quanto disponibile
-:- my_system(M),
-   ships(M, Total),
-   #sum{Ships, S : auto_reinforcement(M, S, Ships)} = SumShips,
-   SumShips > Total.
+can_send_border_reinforcement(From, To) :-
+    ai_player(AI), owner(From, AI), owner(To, AI),
+    is_internal_system(From), is_border_system(To),
+    ships(From, FS), FS > 15,
+    connected(To, From).
 
-% ================================
-% OUTPUT SEMPLIFICATO
-% ================================
 
-% Output finale combinato
-send_fleet(M, S, Ships) :- strategic_send_fleet(M, S, Ships, _).
-send_fleet(M, S, Ships) :- auto_reinforcement(M, S, Ships).
+send_fleet(From, To, Ships) :-
+    chosen_strategy(reinforcement),
+    can_send_border_reinforcement(From, To),
+    ships(From, FS), Ships = FS / 2.
 
-% Mostra solo i risultati principali
+% === Punteggio per preferenze (simulazione weak constraints) ===
+score(2, From, To) :-
+    send_fleet(From, To, _),
+    potential_neutral_target(To, 3, _).
+
+score(3, From, To) :-
+    send_fleet(From, To, _),
+    potential_enemy_target(To, 3, _).
+
+% === Penalità per strategie eccessive ===
+too_many_defense :-
+    chosen_strategy(defensive),
+    #count {F,T,S : send_fleet(F,T,S)} > 3.
+
+too_many_expansion :-
+    chosen_strategy(expansion),
+    #count {F,T,S : send_fleet(F,T,S)} > 2.
+
+too_many_attack :-
+    chosen_strategy(aggressive),
+    #count {F,T,S : send_fleet(F,T,S)} > 1.
+
+too_many_reinforcement :-
+    chosen_strategy(reinforcement),
+    #count {F,T,S : send_fleet(F,T,S)} > 2.
+
+
+chosen_strategy(reinforcement).
+
+#show can_send_border_reinforcement/2.
 #show send_fleet/3.
