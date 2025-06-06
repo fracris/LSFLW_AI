@@ -9,6 +9,7 @@ import java.util.Date;
 
 import it.unical.mat.embasp.base.Handler;
 import it.unical.mat.embasp.base.InputProgram;
+import it.unical.mat.embasp.base.OptionDescriptor;
 import it.unical.mat.embasp.base.Output;
 import it.unical.mat.embasp.languages.asp.ASPInputProgram;
 import it.unical.mat.embasp.platforms.desktop.DesktopHandler;
@@ -20,6 +21,8 @@ public class AIPlayer {
     private Player player;
     private GameState gameState;
     private String aspStrategy;
+    private String consolidamento_strategy = "encodings/consolidamento_strategy.txt";
+
 
     private boolean isInitialized;
     // Directory per salvare i log dei fatti ASP
@@ -34,30 +37,22 @@ public class AIPlayer {
         this.gameState = gameState;
         this.difficulty = difficulty;
 
+
         int enemySystemCount=gameState.getAiPlayers().size();
         int neutralSystemCount=gameState.getGameMap().getSystems().size()-gameState.getPlayers().size();
         int myShipsTotal= player.getTotalShips();
         int enemyShipsTotal=0;
         Map<Integer,int[]> specMetrics = new HashMap<>();
-        int[][] specificMetrics = new int[gameState.getAiPlayers().size()][2];
-        int count=0;
-//        for(Player p:gameState.getPlayers()) {
-//            if(player.getId()!=p.getId()) {
-//                System.out.println(p.getId() + " " + p.getName());
-//                specificMetrics[count][0] = p.getOwnedSystems().size();
-//                specificMetrics[count][1] = p.getTotalShips();
-//                enemyShipsTotal += p.getTotalShips();
-//                count++;
-//            }
-//        }
+
+
         for(Player p:gameState.getPlayers()) {
             if(player.getId()!=p.getId()) {
                 System.out.println(p.getId() + " " + p.getName());
                 specMetrics.put(p.getId(),new int[]{p.getOwnedSystems().size(),p.getTotalShips()});
                 enemyShipsTotal += p.getTotalShips();
-                count++;
             }
         }
+
         enemyShipsTotal-=player.getTotalShips();
         // Inizializza le metriche con i valori predefiniti
         this.previousMetrics = new PreviousGameMetrics(1,enemySystemCount,neutralSystemCount,myShipsTotal,enemyShipsTotal,specMetrics);
@@ -72,16 +67,11 @@ public class AIPlayer {
             this.aspStrategy = "encodings/easy.txt";
 
         }
-        else if (difficulty instanceof Difficulty.Medium)
+        else if (difficulty instanceof Difficulty.Medium || difficulty instanceof Difficulty.Hard)
         {
-            this.aspStrategy = "encodings/medium_strategy.asp";
-
+            this.aspStrategy = "encodings/choose_strategy.asp";
         }
-        else
-        {
-            this.aspStrategy = "encodings/medium_strategy.asp";
 
-        }
 
         File aspFile = new File(aspStrategy);
         if (!aspFile.exists()) {
@@ -93,6 +83,8 @@ public class AIPlayer {
         createLogDirectory();
 
         this.isInitialized = true;
+
+
     }
 
     // Metodo per creare la directory dei log
@@ -106,73 +98,7 @@ public class AIPlayer {
         }
     }
 
-//    public void performTurn() {
-//        if (!isInitialized) {
-//            System.err.println("AIPlayer non inizializzato, impossibile eseguire il turno");
-//            return;
-//        }
-//
-//        try {
-//            // Genera i fatti ASP
-//            String aspFacts = convertGameStateToASP();
-//
-//            // *** STAMPA I FATTI ASP PER DEBUG ***
-//            System.out.println("--- ASP Facts START ---");
-//            System.out.println(aspFacts);
-//            System.out.println("--- ASP Facts END ---\n");
-//
-//            // Salva i fatti ASP in un file (solo per log)
-//            saveAspFactsToFile(aspFacts);
-//
-//            // Creazione del handler
-//            Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-//
-//            // Imposta la strategia ASP
-//            InputProgram strategyProgram = new ASPInputProgram();
-//            strategyProgram.addFilesPath(aspStrategy);
-//            handler.addProgram(strategyProgram);
-//
-//            // Imposta i fatti del gioco
-//            InputProgram factsProgram = new ASPInputProgram();
-//            factsProgram.addProgram(aspFacts);
-//            handler.addProgram(factsProgram);
-//
-//            // Esegue DLV2
-//            Output output = handler.startSync();
-//
-//            // *** STAMPA L'OUTPUT DLV PER DEBUG ***
-//            if (output != null) {
-//                System.out.println("--- DLV Output START ---");
-//                System.out.println(output.getOutput());
-//                System.out.println("--- DLV Output END ---\n");
-//            }
-//
-//            if (output == null || (output.getErrors() != null && !output.getErrors().isEmpty())) {
-//                System.err.println("Errore durante l'esecuzione di EMBASP: " + output.getErrors());
-//                return;
-//            }
-//
-//            // Estrazione e interpretazione degli answer set
-//            List<String> actions = parseAnswerSets(output.getOutput());
-//
-//            // Salva anche gli answer set trovati
-//            //saveAnswerSetsToFile(output.getOutput());
-//
-//            if (!actions.isEmpty()) {
-//                executeActionsFromStrings(actions);
-//            } else {
-//                System.out.println("Nessun answer set valido trovato per " + player.getName());
-//            }
-//
-//            // Aggiorna le metriche precedenti con lo stato corrente del gioco
-//            // (da fare dopo l'esecuzione delle azioni per il prossimo turno)
-//            previousMetrics.updateFromGameState(gameState, player);
-//
-//        } catch (Exception e) {
-//            System.err.println("Errore durante il turno IA: " + e.getMessage());
-//            e.printStackTrace();
-//        }
-//    }
+
 
     public void performTurn() {
         if (!isInitialized) {
@@ -190,8 +116,9 @@ public class AIPlayer {
                 executeAdvancedStrategy();
             }
 
-            // Aggiorna le metriche precedenti con lo stato corrente del gioco
-            previousMetrics.updateFromGameState(gameState, player);
+            if(difficulty instanceof Difficulty.Medium || difficulty instanceof Difficulty.Hard) {
+                previousMetrics.updateFromGameState(gameState, player);
+            }
 
         } catch (Exception e) {
             System.err.println("Errore durante il turno IA: " + e.getMessage());
@@ -199,23 +126,20 @@ public class AIPlayer {
         }
     }
 
-    /**
-     * Esegue la strategia di gioco semplice per il livello di difficoltà facile
-     */
+
     private void executeEasyStrategy() throws Exception {
         // Genera i fatti ASP base (senza metriche precedenti)
         String aspFacts = convertGameStateToASP(false);
 
-        // Aggiungi il fatto del livello di difficoltà
-        //aspFacts += "difficulty(easy).\n";
 
-        // Debug: stampa i fatti ASP
-        System.out.println("--- ASP Facts (Easy) START ---");
-        System.out.println(aspFacts);
-        System.out.println("--- ASP Facts (Easy) END ---\n");
+
+//        System.out.println("--- ASP Facts (Easy) START ---");
+//        System.out.println(aspFacts);
+//        System.out.println("--- ASP Facts (Easy) END ---\n");
 
         // Salva i fatti ASP in un file per debug
         saveAspFactsToFile(aspFacts);
+
 
         // Configura il solver DLV
         Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
@@ -255,9 +179,7 @@ public class AIPlayer {
         }
     }
 
-    /**
-     * Esegue la strategia avanzata a due fasi per i livelli di difficoltà medio e difficile
-     */
+
     private void executeAdvancedStrategy() throws Exception {
         // FASE 1: Determina la strategia ottimale
 
@@ -268,32 +190,26 @@ public class AIPlayer {
         String difficultyLevel = (difficulty instanceof Difficulty.Medium) ? "medium" : "hard";
         aspFacts += "difficulty(" + difficultyLevel + ").\n";
 
-        // Debug: stampa i fatti ASP per la fase 1
-//        System.out.println("--- ASP Facts (Phase 1) START ---");
-//        System.out.println(aspFacts);
-//        System.out.println("--- ASP Facts (Phase 1) END ---\n");
 
-        // Salva i fatti ASP della fase 1 in un file
         saveAspFactsToFile(aspFacts);
 
-        // Configura il solver DLV per la fase 1
-        Handler strategyHandler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-
-        // Determina il file di strategia per la fase 1 (scelta della strategia)
-        String strategyChooserFile = "encodings/choose_strategy.asp";
+        // Configura il solver DLV
+        Handler handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+        OptionDescriptor option = new OptionDescriptor(" --printonlyoptimum");
+        handler.addOption(option);
 
         // Imposta la strategia ASP per la scelta della strategia
         InputProgram strategyChooserProgram = new ASPInputProgram();
-        strategyChooserProgram.addFilesPath(strategyChooserFile);
-        strategyHandler.addProgram(strategyChooserProgram);
+        strategyChooserProgram.addFilesPath(aspStrategy);
+        handler.addProgram(strategyChooserProgram);
 
         // Imposta i fatti del gioco
         InputProgram factsProgramPhase1 = new ASPInputProgram();
         factsProgramPhase1.addProgram(aspFacts);
-        strategyHandler.addProgram(factsProgramPhase1);
+        handler.addProgram(factsProgramPhase1);
 
         // Esegue DLV2 per la fase 1
-        Output outputPhase1 = strategyHandler.startSync();
+        Output outputPhase1 = handler.startSync();
 
         // Debug: stampa l'output DLV della fase 1
         if (outputPhase1 != null) {
@@ -319,72 +235,76 @@ public class AIPlayer {
         System.out.println("Strategie scelte: " + chosenStrategies);
 
         // Estrazione e interpretazione degli answer set della fase 2
-        List<String> actions = parseAnswerSets(outputPhase1.getOutput());
+        List<String> actions1 = parseAnswerSets(outputPhase1.getOutput());
 
-        if (!actions.isEmpty()) {
-            executeActionsFromStrings(actions);
+        if (!actions1.isEmpty()) {
+            executeActionsFromStrings(actions1);
         }
         else {
             System.out.println("Nessun answer set valido trovato per " + player.getName() + " nella fase 2");
         }
 
-//        // FASE 2: Esegui la strategia scelta
-//
-//        // Aggiungi le strategie scelte ai fatti ASP
-//        StringBuilder enhancedFacts = new StringBuilder(aspFacts);
-//        for (String strategy : chosenStrategies) {
-//            enhancedFacts.append(strategy).append(".\n");
-//        }
-//
-//        // Debug: stampa i fatti ASP per la fase 2
-////        System.out.println("--- ASP Facts (Phase 2) START ---");
-////        System.out.println(enhancedFacts.toString());
-////        System.out.println("--- ASP Facts (Phase 2) END ---\n");
-//
-//        // Salva i fatti ASP della fase 2 in un file
-//        //saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
-//
-//        // Configura il solver DLV per la fase 2
-//        Handler executionHandler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-//
-//        // Imposta la strategia ASP per l'esecuzione
-//        InputProgram executionProgram = new ASPInputProgram();
-//        executionProgram.addFilesPath(aspStrategy);
-//        executionHandler.addProgram(executionProgram);
-//
-//        // Imposta i fatti del gioco con le strategie scelte
-//        InputProgram factsProgramPhase2 = new ASPInputProgram();
-//        factsProgramPhase2.addProgram(enhancedFacts.toString());
-//        executionHandler.addProgram(factsProgramPhase2);
-//
-//        // Esegue DLV2 per la fase 2
-//        Output outputPhase2 = executionHandler.startSync();
-//
-//        // Debug: stampa l'output DLV della fase 2
-//        if (outputPhase2 != null) {
-//            System.out.println("--- DLV Output (Phase 2) START ---");
-//            System.out.println(outputPhase2.getOutput());
-//            System.out.println("--- DLV Output (Phase 2) END ---\n");
-//        }
-//
-//        if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
-//            System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2): " + outputPhase2.getErrors());
-//            return;
-//        }
-//
-//        // Estrazione e interpretazione degli answer set della fase 2
-//        List<String> actions = parseAnswerSets(outputPhase2.getOutput());
-//
-//        if (!actions.isEmpty()) {
-//            executeActionsFromStrings(actions);
-//        } else {
-//            System.out.println("Nessun answer set valido trovato per " + player.getName() + " nella fase 2");
-//        }
+        // FASE 2: Esegui la strategia scelta
+
+        // Aggiungi le strategie scelte ai fatti ASP
+        StringBuilder enhancedFacts = new StringBuilder(aspFacts);
+        for (String sendfleet : actions1) {
+            enhancedFacts.append(sendfleet).append(".\n");
+        }
+
+
+
+        // Debug: stampa i fatti ASP per la fase 2
+//        System.out.println("--- ASP Facts (Phase 2) START ---");
+//        System.out.println(enhancedFacts.toString());
+//        System.out.println("--- ASP Facts (Phase 2) END ---\n");
+
+        // Salva i fatti ASP della fase 2 in un file
+        //saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
+
+        // Configura il solver DLV
+        Handler handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+        OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
+
+        handler2.addOption(option2);
+
+        // Imposta la strategia ASP per l'esecuzione
+        InputProgram executionProgram = new ASPInputProgram();
+        executionProgram.addFilesPath(consolidamento_strategy);
+        handler2.addProgram(executionProgram);
+
+        // Imposta i fatti del gioco con le strategie scelte
+        InputProgram factsProgramPhase2 = new ASPInputProgram();
+        factsProgramPhase2.addProgram(enhancedFacts.toString());
+        handler2.addProgram(factsProgramPhase2);
+
+        // Esegue DLV2 per la fase 2
+        Output outputPhase2 = handler2.startSync();
+
+        // Debug: stampa l'output DLV della fase 2
+        if (outputPhase2 != null) {
+            System.out.println("--- DLV Output (Phase 2) START ---");
+            System.out.println(outputPhase2.getOutput());
+            System.out.println("--- DLV Output (Phase 2) END ---\n");
+        }
+
+        if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
+            System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2): " + outputPhase2.getErrors());
+            return;
+        }
+
+        // Estrazione e interpretazione degli answer set della fase 2
+        List<String> actions2 = parseAnswerSets2(outputPhase2.getOutput());
+
+        if (!actions2.isEmpty()) {
+            executeActionsFromStrings(actions2);
+        } else {
+            System.out.println("Nessun answer set valido trovato per " + player.getName() + " nella fase 2");
+        }
     }
 
-    /**
-     * Estrae le strategie scelte dall'output DLV
-     */
+
+
     private List<String> extractChosenStrategies(String dlvOutput) {
         List<String> strategies = new ArrayList<>();
         Pattern p = Pattern.compile("chosen_strategy\\([^)]*\\)");
@@ -395,10 +315,7 @@ public class AIPlayer {
         return strategies;
     }
 
-    /**
-     * Converte lo stato del gioco in fatti ASP
-     * @param includeMetrics se true include le metriche storiche
-     */
+
     private String convertGameStateToASP(boolean includeMetrics) {
         StringBuilder facts = new StringBuilder();
 
@@ -444,15 +361,15 @@ public class AIPlayer {
             }
         }
 
-        for (Fleet fleet : gameState.getGameMap().getFleets()) {
-            facts.append("fleet(")
-                    .append(fleet.getId()).append(",")
-                    .append(fleet.getOwner().getId()).append(",")
-                    .append(fleet.getShips()).append(",")
-                    .append(fleet.getSource().getId()).append(",")
-                    .append(fleet.getDestination().getId()).append(",")
-                    .append((int) fleet.getProgress()).append(").\n");
-        }
+//        for (Fleet fleet : gameState.getGameMap().getFleets()) {
+//            facts.append("fleet(")
+//                    .append(fleet.getId()).append(",")
+//                    .append(fleet.getOwner().getId()).append(",")
+//                    .append(fleet.getShips()).append(",")
+//                    .append(fleet.getSource().getId()).append(",")
+//                    .append(fleet.getDestination().getId()).append(",")
+//                    .append((int) fleet.getProgress()).append(").\n");
+//        }
 
         // Aggiungi i dati storici solo se richiesto
         if (includeMetrics) {
@@ -529,6 +446,25 @@ public class AIPlayer {
         return actions;
     }
 
+
+    private List<String> parseAnswerSets2(String dlvOutput) {
+        List<String> actions = new ArrayList<>();
+        // Match consolidation_fleet(From, To, Ships)
+        Pattern p = Pattern.compile("consolidation_fleet\\(([^,]+),([^,]+),([^\\)]+)\\)");
+        Matcher m = p.matcher(dlvOutput);
+        while (m.find()) {
+            String from = m.group(1).trim();
+            String to = m.group(2).trim();
+            String ships = m.group(3).trim();
+            String sendFleet = "send_fleet(" + from + "," + to + "," + ships + ")";
+            actions.add(sendFleet);
+        }
+        System.out.println("Azioni estratte e convertite: " + actions.size());
+        return actions;
+    }
+
+
+
     private void executeActionsFromStrings(List<String> actions) {
         // Salva le azioni eseguite in un file (solo per log)
         saveExecutedActionsToFile(actions);
@@ -573,10 +509,6 @@ public class AIPlayer {
                 if (fleet != null) {
 
                     executedAny = true;
-                    if(difficulty instanceof Difficulty.Easy)
-                    {
-                         return ; // => se voglio mandare solo una alla volta per il livello medio
-                    }
                     System.out.println("Flotta inviata: " + atomStr);
                 }
             } catch (Exception e) {

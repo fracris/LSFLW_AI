@@ -1,13 +1,11 @@
-
 % Definizioni di base
 % -------------------
 
-my_system(S)   :- system(S), owner(S,P), ai_player(P).
+my_system(S) :- system(S), owner(S,P), ai_player(P).
 
 % nei livelli successivi al primo quando abbiamo piu plater ai ogni player ai
 % deve essere cooperativo tra di loro e competitivi contro il nemico cioe tra un player non ai
-enemy_system(S):- system(S), owner(S,P), not ai_player(P), not neutral(S).
-neutral_system(S):- neutral(S).
+enemy_system(S):- system(S), owner(S,P), not ai_player(P), not neutral_system(S).
 
 % Ausiliario per connessioni non orientate
 undirected_connected(M,S) :- connected(M,S).
@@ -17,7 +15,7 @@ undirected_connected(M,S) :- connected(S,M).
 % ----------------------------
 
 % 1) Attacca neutrali adiacenti
-send_fleet(M,S,MyShips) :-
+send_expansive_fleet(M,S,MyShips) :-
     my_system(M),
     neutral_system(S),
     undirected_connected(M,S),
@@ -25,7 +23,7 @@ send_fleet(M,S,MyShips) :-
     MyShips > 15.
 
 % 2) Attacca nemici adiacenti con superiorità numerica
-send_fleet(M,S,MyShips) :-
+send_attack_fleet(M,S,MyShips) :-
     my_system(M),
     enemy_system(S),
     undirected_connected(M,S),
@@ -33,36 +31,10 @@ send_fleet(M,S,MyShips) :-
     ships(S,EnemyShips),
     MyShips > EnemyShips + 10.
 
-% 3) Rinforza i tuoi sistemi deboli
+{send_fleet(M,S,Ships): send_attack_fleet(M,S,Ships)}<=1.
+{send_fleet(M,S,Ships): send_expansive_fleet(M,S,Ships)}<=1.
 
-%send_fleet(M,S,Ships) :-
-%    my_system(M),
-%    my_system(S),
-%    existBiggerEnemyShip(S),
-%    safeShip(M),
-%    M != S,
-%    undirected_connected(M,S),
-%    ships(M,MyShips),
-%    ships(S,TargetShips),
-%    MyShips > TargetShips,
-%    Ships = MyShips / 2.
-
-%safeShip(M) :-
-%    my_system(M),
-%    not enemyNear(M).
-
-%enemyNear(M) :-
-%    my_system(M),
-%    enemy_system(N),
-%    undirected_connected(N,M).
-
-%existBiggerEnemyShip(S) :-
-%    my_system(S),
-%    enemy_system(N),
-%    undirected_connected(N,S),
-%    ships(S,Myships),
-%    ships(N,Enemyships),
-%    Myships < Enemyships.
+:~ #count{M,S: send_fleet(M,S,Ships)}=C. [-C@4]
 
 % Weak Constraint 1: Penalizza il rinforzo di sistemi deboli
 :~ send_fleet(M,S,Ships),

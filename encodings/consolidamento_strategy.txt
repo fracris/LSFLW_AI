@@ -1,0 +1,187 @@
+% Identifica i sistemi controllati dall'IA (CORRETTO)
+my_system(S) :- system(S), ai_player(P), owner(S, P).
+
+% Identifica i giocatori nemici
+enemy(P) :- system(S), owner(S, P), not ai_player(P).
+
+% Identifica i sistemi nemici
+enemy_system(S, P) :- system(S), owner(S, P),enemy(P).
+
+% Connessioni non orientate tra sistemi
+undirected_connected(M, S) :- connected(M, S).
+undirected_connected(M, S) :- connected(S, M).
+
+% Identifica i sistemi di confine (SEMPLIFICATO)
+border_system(S) :-
+    my_system(S),
+    undirected_connected(S, N),
+    enemy_system(N, _).
+
+border_system(S) :-
+    my_system(S),
+    undirected_connected(S, N),
+    neutral_system(N).
+
+% Dominio delle distanze (puoi modificare 10)
+distance(0..10).
+
+% Distanza base: 0 per i sistemi di confine
+dist_from_border(S, 0) :- border_system(S).
+
+% Propagazione della distanza ai vicini
+dist_from_border(S, D) :-
+    my_system(S),
+    undirected_connected(S, S1),
+    dist_from_border(S1, D1),
+    D = D1 + 1,
+    distance(D),
+    not smaller_distance_already_found(S, D).
+
+% Supporto: verifica se c'è già una distanza minore
+smaller_distance_already_found(S, D) :-
+    dist_from_border(S, D2),
+    distance(D2),
+    distance(D),   % <-- vincola D per la safety
+    D2 < D.
+
+
+% Identifica i sistemi interni (distanza >= 2 dal confine)
+internal_system(S) :- distance_to_border(S, D), D >= 2.
+
+% Identifica i sistemi intermedi (distanza = 1 dal confine)
+intermediate_system(S) :- distance_to_border(S, 1).
+
+% Calcola il percorso ottimale verso il confine
+next_step_to_border(From, To) :-
+    my_system(From),
+    my_system(To),
+    undirected_connected(From, To),
+    dist_from_border(From, DistFrom),
+    dist_from_border(To, DistTo),
+    DistFrom > DistTo,
+    DistFrom > 0.
+
+
+% Verifica se un sistema ha navi assegnate dal primo file
+has_assignment(From) :- send_fleet(From, _, _).
+
+% Calcolo RILASSATO delle navi disponibili
+available_for_consolidation(From, Available) :-
+    my_system(From),
+    ships(From, Total),
+    not has_assignment(From),
+    Total > 20,              % Soglia più bassa
+    Available = Total - 5,   % Riserva più bassa
+    Available > 10.          % Soglia minima più bassa
+
+
+
+% BASE
+can_send_ships(From, Ships) :-
+    available_for_consolidation(From, Available),
+    Available >= 10,         % Soglia molto più bassa
+    Ships = Available / 2,
+    Ships >= 5.              % Minimo più basso
+
+% AGGRESSIVA
+can_send_many_ships(From, Ships) :-
+    available_for_consolidation(From, Available),
+    ships(From, Total),
+    Total > 80,              % Soglia più bassa
+    Available >= 20,         % Soglia più bassa
+    Ships = Available * 2 / 3,
+    Ships >= 10.             % Minimo più basso
+
+% Un sistema può consolidare
+can_consolidate(From, To, Ships) :-
+    next_step_to_border(From, To),
+    can_send_ships(From, Ships).
+
+can_consolidate_heavy(From, To, Ships) :-
+    next_step_to_border(From, To),
+    can_send_many_ships(From, Ships).
+
+% ===== PRIORITÀ DI CONSOLIDAMENTO =====
+% Identifica sistemi con nemici vicini
+has_enemy_neighbor(BorderSys) :-
+    border_system(BorderSys),
+    undirected_connected(BorderSys, EnemySys),
+    enemy_system(EnemySys, _).
+
+% Calcola il livello di minaccia
+border_threat_level(BorderSys, high) :-
+    border_system(BorderSys),
+    undirected_connected(BorderSys, E1),
+    enemy_system(E1, _),
+    undirected_connected(BorderSys, E2),
+    enemy_system(E2, _),
+    E1 != E2.
+
+border_threat_level(BorderSys, medium) :-
+    border_system(BorderSys),
+    has_enemy_neighbor(BorderSys),
+    not border_threat_level(BorderSys, high).
+
+border_threat_level(BorderSys, low) :-
+    border_system(BorderSys),
+    not has_enemy_neighbor(BorderSys).
+
+% ===== SELEZIONE AZIONI DI CONSOLIDAMENTO =====
+% Genera potenziali azioni di consolidamento
+potential_consolidation(From, To, Ships) :- can_consolidate(From, To, Ships).
+potential_consolidation(From, To, Ships) :- can_consolidate_heavy(From, To, Ships).
+
+% ===== GESTIONE LIMITI PER DIFFICOLTÀ =====
+max_actions(5) :- difficulty(medium).
+max_actions(10) :- difficulty(hard).
+
+
+% STRATEGIA UNIFICATA: Scegli azioni basandoti sui limiti di difficoltà
+% Se hai meno azioni disponibili del limite, prendile tutte
+consolidation_action(From, To, Ships) :-
+    potential_consolidation(From, To, Ships),
+    max_actions(MaxActions),
+    #count{F, T : potential_consolidation(F, T, _)} <= MaxActions.
+
+% Se hai più azioni del limite, scegli esattamente il limite massimo
+ {consolidation_action(From, To, Ships) : potential_consolidation(From, To, Ships)} = MaxActions :-
+    max_actions(MaxActions),
+    #count{F, T : potential_consolidation(F, T, _)} > MaxActions.
+
+% Applica il limite delle azioni
+:- #count{From, To : consolidation_action(From, To, _)} > Max, max_actions(Max).
+
+
+% ===== PREVENZIONE CONFLITTI =====
+:- consolidation_action(From, To, _), send_fleet(From, To, _).
+
+
+% ===== VINCOLI DI SICUREZZA RILASSATI =====
+:- consolidation_action(From, _, Ships), ships(From, Total), Ships >= Total - 5.
+:- consolidation_action(_, _, Ships), Ships <= 0.
+:- consolidation_action(From, _, Ships), available_for_consolidation(From, Available), Ships > Available.
+:- consolidation_action(_, To, _), not my_system(To).
+
+% ===== WEAK CONSTRAINTS PER OTTIMIZZAZIONE =====
+:~ consolidation_action(From, _, _), available_for_consolidation(From, Available). [1000 - Available@1]
+:~ consolidation_action(_, To, _), border_system(To), border_threat_level(To, low). [100@2]
+:~ consolidation_action(_, To, _), border_system(To), border_threat_level(To, medium). [50@2]
+:~ consolidation_action(_, To, _), border_system(To), ships(To, Ships). [Ships@3]
+:~ consolidation_action(From, _, _), distance_to_border(From, Dist). [10 - Dist@4]
+:~ consolidation_action(_, _, Ships). [200 - Ships@5]
+
+% ===== OUTPUT FINALE =====
+consolidation_fleet(From, To, Ships) :- consolidation_action(From, To, Ships).
+
+% ===== STATISTICHE E DEBUG =====
+consolidation_count(Count) :- #count{From, To : consolidation_fleet(From, To, _)} = Count.
+receiving_consolidation(To) :- consolidation_fleet(_, To, _).
+sending_consolidation(From) :- consolidation_fleet(From, _, _).
+
+% ===== DISPLAY =====
+#show consolidation_fleet/3.
+% #show can_consolidate/3.
+% #show dist_from_border/2.
+% #show can_consolidate_heavy/3.
+
+#show consolidation_action/3.
