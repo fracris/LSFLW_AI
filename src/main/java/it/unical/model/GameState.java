@@ -19,6 +19,21 @@ public class GameState {
         this.winner    = null;
     }
 
+    private void checkGameOver() {
+        List<Player> active = new ArrayList<>();
+        for (Player p : players) {
+            if (!p.getOwnedSystems().isEmpty() || !p.getFleets().isEmpty()) {
+                active.add(p);
+            }
+            if (!p.isAI() && p.getOwnedSystems().isEmpty() && p.getFleets().isEmpty()) {
+                gameOver = true;
+            }
+        }
+        if (active.size() == 1) {
+            gameOver = true;
+            winner   = active.get(0);
+        }
+    }
     // Inizializza una nuova partita
     public void initGame(Difficulty difficulty, int numSystem, boolean withAI) {
         // Genera la mappa
@@ -108,24 +123,7 @@ public class GameState {
         count++;
     }
 
-    // Controlla se il gioco è finito
-    private void checkGameOver() {
-        List<Player> active = new ArrayList<>();
-        for (Player p : players) {
-            if (!p.getOwnedSystems().isEmpty() || !p.getFleets().isEmpty()) {
-                active.add(p);
-            }
-        }
-        if (active.size() == 1) {
-            gameOver = true;
-            winner   = active.get(0);
-        }
-    }
 
-    /**
-     * Invia una flotta da source a target.
-     * Non dipende più da "currentPlayer": chiama direttamente sendFleet su un giocatore.
-     */
     public Fleet sendFleet(Player who, StarSystem source, StarSystem target, int ships) {
         if (source.getOwner() == who && source.getShips() >= ships) {
             source.removeShips(ships);

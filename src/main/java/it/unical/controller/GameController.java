@@ -191,25 +191,42 @@ public class GameController {
         // Game Over!
         if (gameState.isGameOver()) {
             gameTimer.stop();
-            String winner = gameState.getWinner().getName();
-            System.out.println("Game Over! Il vincitore è: " + winner);
+            if(gameState.getWinner()!=null) {
+                String winner = gameState.getWinner().getName();
+                System.out.println("Game Over! Il vincitore è: " + winner);
 
-            // Mostra dialog e torna al menu principale
-            SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(
-                        gameFrame,
-                        "Game Over! Ha vinto: " + winner,
-                        "Game Over",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-                // Chiude la finestra di gioco
-                gameFrame.dispose();
-                // Riapre il menu principale
-                new it.unical.gui.MainMenuFrame();
-            });
+                // Mostra dialog e torna al menu principale
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(
+                            gameFrame,
+                            "Game Over! Ha vinto: " + winner,
+                            "Game Over",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    // Chiude la finestra di gioco
+                    gameFrame.dispose();
+                    // Riapre il menu principale
+                    new it.unical.gui.MainMenuFrame();
+                });
+            } else {
+                System.out.println("Game Over! Mi dispiace. Hai perso la partita");
+
+                // Mostra dialog e torna al menu principale
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(
+                            gameFrame,
+                            "Game Over! Hai perso :(",
+                            "Game Over",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    // Chiude la finestra di gioco
+                    gameFrame.dispose();
+                    // Riapre il menu principale
+                    new it.unical.gui.MainMenuFrame();
+                });
+            }
         }
     }
-
     private void handleAIPlayers(AIPlayer i) {
         // Esegui il ragionamento per ogni IA
         try {
