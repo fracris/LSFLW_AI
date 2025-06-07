@@ -6,9 +6,11 @@ import it.unical.gui.GamePanel;
 import it.unical.model.*;
 
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 import javax.swing.*;
 
 public class GameController {
@@ -20,147 +22,251 @@ public class GameController {
     private Map<Player, AIPlayer> aiPlayers;
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
-    private int playerTurn = 0;
+    private int playerTurn = 0; // Indice per il turno round-robin degli AI
     private int sendPerc = 100;
     private Difficulty difficulty;
+    private volatile boolean paused = false;
+    private volatile boolean gameRunning = true;
 
+    // Executor per operazioni asincrone del GameController
+    private final ExecutorService controllerExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "GameController-Worker");
+        t.setDaemon(true);
+        return t;
+    });
+
+    // **PARAMETRO CHIAVE**: Intervallo tra i turni AI basato sul numero di giocatori
+    // Formula: 200 / (numero_giocatori_ai) ticks
+    // Con UPDATE_RATE=10ms: ogni 2000ms / numero_giocatori_ai
+    private int getAITurnInterval() {
+        int numAIPlayers = gameState.getPlayers().size() - 1; // Escludi il giocatore umano
+        if (numAIPlayers <= 0) return Integer.MAX_VALUE; // Nessun AI
+        return 200 / numAIPlayers; // Come nel codice originale
+    }
 
     public GameController(Difficulty difficulty) {
         this.difficulty = difficulty;
-
-        // Crea lo stato di gioco
         gameState = new GameState(new Dimension(1600, 900));
-
-        // Crea il controller di input
         inputController = new InputController(this);
-
-        // Inizializza la mappa degli AI players
         aiPlayers = new HashMap<>();
-
-        // Inizializza il timer di gioco
         gameTimer = new Timer(UPDATE_RATE, e -> update());
     }
 
-
     public void showPauseDialog() {
-        // Ferma il game loop
-        gameTimer.stop();
-        paused = true;
+        pauseGame();
 
-        // Opzioni del dialog
-        String[] options = {"Riprendi", "Menu Principale"};
+        SwingUtilities.invokeLater(() -> {
+            String[] options = {"Riprendi", "Menu Principale"};
+            int choice = JOptionPane.showOptionDialog(
+                    gameFrame,
+                    "Il gioco è in pausa",
+                    "Pausa",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
 
-        // Popup modale FlatLaf
-        int choice = JOptionPane.showOptionDialog(
-                gameFrame,                                // parent component
-                "Il gioco è in pausa",                    // message
-                "Pausa",                                  // title
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,                                     // icona di default
-                options,                                  // labels dei pulsanti
-                options[0]                                // default: “Riprendi”
-        );
-
-        if (choice == 0) {
-            // Riprendi
-            gameTimer.start();
-            paused = false;
-        } else {
-            // Torna al menu principale
-            backToMainMenu();
-        }
+            if (choice == 0) {
+                resumeGame();
+            } else {
+                backToMainMenu();
+            }
+        });
     }
 
-    // Rimuovi togglePause(), oppure rimappalo a showPauseDialog()
     public void togglePause() {
         if (paused) {
-            // se vuoi mantenere un semplice toggle…
-            gameTimer.start();
-            paused = false;
+            resumeGame();
         } else {
             showPauseDialog();
         }
     }
 
+    private void pauseGame() {
+        gameTimer.stop();
+        paused = true;
+        System.out.println("Gioco messo in pausa");
+    }
 
-
-    // Modifica il metodo sendFleet se necessario per assicurarti che rimanga sempre almeno una nave
-    public void sendFleet(StarSystem source, StarSystem target, int ships) {
-        // Assicurati di mantenere almeno una nave nel sistema di origine
-        int shipsToSend = Math.min(ships, source.getShips() - 1);
-
-        if (shipsToSend > 0) {
-            Player humanPlayer = gameState.getHumanPlayer();
-            gameState.sendFleet(humanPlayer, source, target, shipsToSend);
+    private void resumeGame() {
+        if (gameRunning) {
+            gameTimer.start();
+            paused = false;
+            System.out.println("Gioco ripreso");
         }
     }
 
-    private boolean paused = false;
-
-
+    public void sendFleet(StarSystem source, StarSystem target, int ships) {
+        controllerExecutor.submit(() -> {
+            try {
+                int shipsToSend = Math.min(ships, source.getShips() - 1);
+                if (shipsToSend > 0) {
+                    Player humanPlayer = gameState.getHumanPlayer();
+                    gameState.sendFleet(humanPlayer, source, target, shipsToSend);
+                    System.out.println("Flotta inviata: " + shipsToSend + " navi da sistema " +
+                            source.getId() + " a sistema " + target.getId());
+                }
+            } catch (Exception e) {
+                System.err.println("Errore durante l'invio della flotta: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
 
     public void backToMainMenu() {
-        // Ferma il timer (se non già fermo)
-        gameTimer.stop();
-        // Chiudi la finestra di gioco (GameFrame)
-        if (gameFrame != null) gameFrame.dispose();
-        // Apri il menu principale
-        SwingUtilities.invokeLater(() -> new it.unical.gui.MainMenuFrame());
+        controllerExecutor.submit(() -> {
+            try {
+                stopGame();
+
+                SwingUtilities.invokeLater(() -> {
+                    if (gameFrame != null) {
+                        gameFrame.dispose();
+                    }
+                    new it.unical.gui.MainMenuFrame();
+                });
+
+            } catch (Exception e) {
+                System.err.println("Errore durante il ritorno al menu principale: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
 
 
-    public int getSendPerc() {
-        return sendPerc;
+
+    private void shutdownAIPlayers() {
+        if (aiPlayers.isEmpty()) return;
+
+        System.out.println("Iniziando la chiusura di " + aiPlayers.size() + " AIPlayer...");
+
+        List<Future<Void>> shutdownTasks = new ArrayList<>();
+
+        for (Map.Entry<Player, AIPlayer> entry : aiPlayers.entrySet()) {
+            Future<Void> task = controllerExecutor.submit(() -> {
+                try {
+                    AIPlayer aiPlayer = entry.getValue();
+                    System.out.println("Chiudendo AIPlayer per " + entry.getKey().getName());
+                    aiPlayer.shutdown();
+                    System.out.println("AIPlayer chiuso per " + entry.getKey().getName());
+                    return null;
+                } catch (Exception e) {
+                    System.err.println("Errore durante la chiusura di AIPlayer per " +
+                            entry.getKey().getName() + ": " + e.getMessage());
+                    return null;
+                }
+            });
+            shutdownTasks.add(task);
+        }
+
+        for (Future<Void> task : shutdownTasks) {
+            try {
+                task.get(3, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                System.err.println("Timeout durante la chiusura di un AIPlayer");
+                task.cancel(true);
+            } catch (Exception e) {
+                System.err.println("Errore durante l'attesa della chiusura AIPlayer: " + e.getMessage());
+            }
+        }
+
+        aiPlayers.clear();
+        System.out.println("Tutti gli AIPlayer sono stati chiusi");
     }
 
-    public void setSendPerc(int sendPerc) {
-        this.sendPerc = sendPerc;
+    private void shutdownExecutors() {
+        controllerExecutor.shutdown();
+        try {
+            if (!controllerExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
+                controllerExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            controllerExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("Executor del GameController chiusi");
     }
 
-    public void setGameState(GameState gameState) {
-        this.gameState = gameState;
-    }
-
-    public GameFrame getGameFrame() {
-        return gameFrame;
-    }
-
-    // Inizializza e avvia il gioco
     public void initGame() {
+        controllerExecutor.submit(() -> {
+            try {
+                initGameAsync();
+            } catch (Exception e) {
+                System.err.println("Errore durante l'inizializzazione del gioco: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void initGameAsync() {
         boolean withAI = true;
 
         int numSystem;
         if (difficulty instanceof Difficulty.Easy) {
             numSystem = 10;
-        }
-        else if (difficulty instanceof Difficulty.Medium) {
+        } else if (difficulty instanceof Difficulty.Medium) {
             numSystem = 20;
-        }
-        else /* must be Hard */ {
+        } else {
             numSystem = 30;
         }
 
-
-
-        // Inizializza lo stato di gioco con i parametri del livello
         gameState.initGame(difficulty, numSystem, withAI);
 
-        // Crea gli AIPlayer per ogni giocatore IA
-        List<Player> aiPlayers = gameState.getAiPlayers();
-        for (Player aiPlayer : aiPlayers) {
-            this.aiPlayers.put(aiPlayer, new AIPlayer(aiPlayer, gameState, difficulty));
+        // Crea gli AIPlayer per ogni giocatore IA in modo asincrono
+        List<Player> aiPlayersList = gameState.getAiPlayers();
+        List<Future<Void>> initTasks = new ArrayList<>();
+
+        for (Player aiPlayer : aiPlayersList) {
+            Future<Void> task = controllerExecutor.submit(() -> {
+                try {
+                    System.out.println("Inizializzando AIPlayer per " + aiPlayer.getName());
+                    AIPlayer aiPlayerInstance = new AIPlayer(aiPlayer, gameState, difficulty);
+                    synchronized (aiPlayers) {
+                        this.aiPlayers.put(aiPlayer, aiPlayerInstance);
+                    }
+                    System.out.println("AIPlayer inizializzato per " + aiPlayer.getName());
+                    return null;
+                } catch (Exception e) {
+                    System.err.println("Errore nell'inizializzazione AIPlayer per " +
+                            aiPlayer.getName() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    return null;
+                }
+            });
+            initTasks.add(task);
         }
 
-        // IMPORTANTE: Aggiorna le viste dei sistemi se GameFrame è già stato creato
-        if (gameFrame != null && gameFrame.getGamePanel() != null) {
-            gameFrame.getGamePanel().updateSystemViews();
-            System.out.println("Aggiornate le viste dei sistemi: " +
-                    gameState.getGameMap().getSystems().size() + " sistemi trovati");
+        // Attendi che tutti gli AIPlayer siano inizializzati
+        for (Future<Void> task : initTasks) {
+            try {
+                task.get(5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                System.err.println("Errore o timeout nell'inizializzazione AIPlayer: " + e.getMessage());
+            }
         }
 
-        // Avvia il timer di gioco
-        gameTimer.start();
+        SwingUtilities.invokeLater(() -> {
+            if (gameFrame != null && gameFrame.getGamePanel() != null) {
+                gameFrame.getGamePanel().updateSystemViews();
+                System.out.println("Aggiornate le viste dei sistemi: " +
+                        gameState.getGameMap().getSystems().size() + " sistemi trovati");
+            }
+        });
+
+        SwingUtilities.invokeLater(() -> {
+            if (gameRunning) {
+                gameTimer.start();
+                System.out.println("Timer del gioco avviato");
+
+                // Calcola e stampa la frequenza AI
+                int aiTurnInterval = getAITurnInterval();
+                int frequencyMs = aiTurnInterval * UPDATE_RATE;
+                System.out.println("AI turni ogni " + aiTurnInterval + " ticks (" + frequencyMs + "ms) per " +
+                        aiPlayersList.size() + " giocatori AI");
+            }
+        });
     }
 
     public void setGameFrame(GameFrame gameFrame) {
@@ -171,81 +277,133 @@ public class GameController {
     }
 
     private void update() {
-        // Incrementa il contatore di tick
+        if (!gameRunning) return;
+
         tickCounter++;
 
-        // Aggiorna lo stato del gioco e le flotte
-        gameState.updateGameState();
-        gameState.getGameMap().updateFleets(0.3);
-
-        if (tickCounter % (200/(gameState.getPlayers().size()-1)) == 0) {
-            handleAIPlayers(aiPlayers.get(gameState.getPlayers().get(playerTurn+1)));
-            playerTurn = (playerTurn+1)%(gameState.getPlayers().size()-1);
+        // Aggiorna lo stato del gioco
+        try {
+            gameState.updateGameState();
+            gameState.getGameMap().updateFleets(0.3);
+        } catch (Exception e) {
+            System.err.println("Errore durante l'aggiornamento dello stato del gioco: " + e.getMessage());
         }
 
-        // Aggiorna l'interfaccia grafica
-        if (gameFrame != null) {
-            gameFrame.updateUI();
-        }
+        // **GESTIONE AI CON ROUND-ROBIN E TIMING CORRETTO**
+        // Solo se ci sono giocatori AI
+        if (!aiPlayers.isEmpty()) {
+            int aiTurnInterval = getAITurnInterval();
 
-        // Game Over!
-        if (gameState.isGameOver()) {
-            gameTimer.stop();
-            if(gameState.getWinner()!=null) {
-                String winner = gameState.getWinner().getName();
-                System.out.println("Game Over! Il vincitore è: " + winner);
-
-                // Mostra dialog e torna al menu principale
-                SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(
-                            gameFrame,
-                            "Game Over! Ha vinto: " + winner,
-                            "Game Over",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
-                    // Chiude la finestra di gioco
-                    gameFrame.dispose();
-                    // Riapre il menu principale
-                    new it.unical.gui.MainMenuFrame();
-                });
-            } else {
-                System.out.println("Game Over! Mi dispiace. Hai perso la partita");
-
-                // Mostra dialog e torna al menu principale
-                SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(
-                            gameFrame,
-                            "Game Over! Hai perso :(",
-                            "Game Over",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
-                    // Chiude la finestra di gioco
-                    gameFrame.dispose();
-                    // Riapre il menu principale
-                    new it.unical.gui.MainMenuFrame();
-                });
+            if (tickCounter % aiTurnInterval == 0) {
+                handleAIPlayerTurn();
             }
         }
+
+        // Aggiorna l'interfaccia grafica su EDT
+        if (gameFrame != null) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    gameFrame.repaint();
+                    if (gameFrame.getGamePanel() != null) {
+                        gameFrame.updateUI();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Errore durante il repaint: " + e.getMessage());
+                }
+            });
+        }
+
+        checkGameOver();
     }
-    private void handleAIPlayers(AIPlayer i) {
-        // Esegui il ragionamento per ogni IA
-        try {
-            i.performTurn();
-        } catch (Exception e) {
-            System.err.println("Errore durante il turno dell'IA: " + e.getMessage());
-            e.printStackTrace();
+
+    /**
+     * Gestisce il turno di un singolo AI player in modo round-robin
+     */
+    private void handleAIPlayerTurn() {
+        List<Player> aiPlayersList = gameState.getAiPlayers();
+
+        if (aiPlayersList.isEmpty()) return;
+
+        // Calcola quale AI deve giocare questo turno (round-robin)
+        Player currentAIPlayer = aiPlayersList.get(playerTurn);
+        AIPlayer aiPlayerInstance = aiPlayers.get(currentAIPlayer);
+
+        if (aiPlayerInstance != null) {
+            // Esegui il turno in modo asincrono
+            controllerExecutor.submit(() -> {
+                try {
+                    if (!aiPlayerInstance.isExecuting()) {
+                        System.out.println("Turno AI: " + currentAIPlayer.getName() +
+                                " (tick: " + tickCounter + ")");
+                        aiPlayerInstance.performTurn();
+                    } else {
+                        System.out.println("AI " + currentAIPlayer.getName() +
+                                " ancora in esecuzione, salto turno");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Errore durante il turno AI per " +
+                            currentAIPlayer.getName() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        // Passa al prossimo AI player (round-robin)
+        playerTurn = (playerTurn + 1) % aiPlayersList.size();
+    }
+
+    private void checkGameOver() {
+        if (gameState.isGameOver()) {
+            controllerExecutor.submit(() -> {
+                stopGame();
+
+                SwingUtilities.invokeLater(() -> {
+                    String message;
+                    if (gameState.getWinner() != null) {
+                        String winner = gameState.getWinner().getName();
+                        message = "Game Over! Ha vinto: " + winner;
+                        System.out.println("Game Over! Il vincitore è: " + winner);
+                    } else {
+                        message = "Game Over! Hai perso :(";
+                        System.out.println("Game Over! Mi dispiace. Hai perso la partita");
+                    }
+
+                    JOptionPane.showMessageDialog(
+                            gameFrame,
+                            message,
+                            "Game Over",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+
+                    if (gameFrame != null) {
+                        gameFrame.dispose();
+                    }
+                    new it.unical.gui.MainMenuFrame();
+                });
+            });
         }
     }
 
-//    // Invia una flotta da un sistema a un altro (per il giocatore umano)
-//    public void sendFleet(StarSystem source, StarSystem target, int ships) {
-//        Player humanPlayer = gameState.getHumanPlayer();
-//        gameState.sendFleet(humanPlayer, source, target, ships);
-//    }
+    // ==================== GETTERS E SETTERS ====================
 
-    // Getters
+    public boolean isGameRunning() {
+        return gameRunning;
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
     public GameState getGameState() {
         return gameState;
+    }
+
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+    }
+
+    public GameFrame getGameFrame() {
+        return gameFrame;
     }
 
     public GamePanel getGamePanel() {
@@ -262,4 +420,74 @@ public class GameController {
     public Difficulty getDifficulty() {
         return difficulty;
     }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public Map<Player, AIPlayer> getAiPlayers() {
+        synchronized (aiPlayers) {
+            return new HashMap<>(aiPlayers);
+        }
+    }
+
+    public Timer getGameTimer() {
+        return gameTimer;
+    }
+
+    public int getTickCounter() {
+        return tickCounter;
+    }
+
+    public int getUpdateRate() {
+        return UPDATE_RATE;
+    }
+
+    public int getSendPerc() {
+        return sendPerc;
+    }
+
+    public void setSendPerc(int sendPerc) {
+        this.sendPerc = sendPerc;
+    }
+
+    // Nel GameController, aggiungi questo metodo al shutdown:
+
+    private void forceKillAllDLVProcesses() {
+        try {
+            if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+                ProcessBuilder pb = new ProcessBuilder("taskkill", "/F", "/IM", "dlv.exe");
+                Process killProcess = pb.start();
+                killProcess.waitFor(3, TimeUnit.SECONDS);
+                System.out.println("Terminati tutti i processi DLV rimasti");
+            } else {
+                ProcessBuilder pb = new ProcessBuilder("pkill", "-f", "dlv");
+                Process killProcess = pb.start();
+                killProcess.waitFor(3, TimeUnit.SECONDS);
+                System.out.println("Terminati tutti i processi DLV rimasti");
+            }
+        } catch (Exception e) {
+            System.err.println("Errore durante terminazione globale processi DLV: " + e.getMessage());
+        }
+    }
+
+    // Modifica stopGame() per includere questa chiamata:
+    private void stopGame() {
+        gameRunning = false;
+
+        if (gameTimer != null && gameTimer.isRunning()) {
+            gameTimer.stop();
+        }
+
+        shutdownAIPlayers();
+
+        // **NUOVO**: Cleanup globale DLV
+        forceKillAllDLVProcesses();
+
+        shutdownExecutors();
+
+        System.out.println("Gioco fermato completamente");
+    }
 }
+
+
