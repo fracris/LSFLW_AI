@@ -20,13 +20,6 @@ smaller_distance_already_found(S, D) :-
     distance(D),   % <-- vincola D per la safety
     D2 < D.
 
-
-% Identifica i sistemi interni (distanza >= 2 dal confine)
-internal_system(S) :- distance_to_border(S, D), D >= 2.
-
-% Identifica i sistemi intermedi (distanza = 1 dal confine)
-intermediate_system(S) :- distance_to_border(S, 1).
-
 % Calcola il percorso ottimale verso il confine
 next_step_to_border(From, To) :-
     my_system(From),
@@ -124,10 +117,8 @@ max_actions(5) :- difficulty(hard).
 % Premia invii verso sistemi deboli (poche navi)
 :~ consolidation_action(_, To, _), border_system(To), ships(To, Ships), Ships < 50. [50 - Ships@3]
 
-% Premia azioni da sistemi vicini al confine (facoltativa)
-:~ consolidation_action(From, _, _), distance_to_border(From, Dist), Dist < 5. [-Dist@4]
-
-
+consolidation_fleet(From, To, Ships) :- consolidation_action(From, To, Ships).
 
 #show potential_consolidation/3.
 #show consolidation_action/3.
+#show consolidation_fleet/3.
