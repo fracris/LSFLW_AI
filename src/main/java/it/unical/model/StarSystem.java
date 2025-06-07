@@ -7,7 +7,7 @@ import java.util.List;
 public class StarSystem {
     private int id;
     private String name;
-    private Point position;
+    private final Point position;
     private int ships;
     private Player owner;
     private int productionRate;
@@ -50,7 +50,6 @@ public class StarSystem {
         this.connectedSystems = new ArrayList<>();
     }
 
-    // Metodi per connettere i sistemi stellari (creazione del grafo)
     public void connectTo(StarSystem other) {
         if (!connectedSystems.contains(other)) {
             connectedSystems.add(other);
@@ -58,7 +57,6 @@ public class StarSystem {
         }
     }
 
-    // Metodi per la gestione delle flotte e delle navi
     public void addShips(int amount) {
         ships += amount;
     }
@@ -69,14 +67,12 @@ public class StarSystem {
         }
     }
 
-    // Metodo per la produzione di navi per turno
     public void produceShips() {
         if (owner != null) {
             ships += productionRate;
         }
     }
 
-    // Metodo per cambiare proprietario
     public void setOwner(Player newOwner) {
         this.owner = newOwner;
     }

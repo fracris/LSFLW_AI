@@ -68,14 +68,12 @@ ships_decreased :-
     previous_my_ships_total(Previous),
     Current < Previous.
 
-% ===== PREDICATI AUSILIARI PER GESTIRE LA NEGAZIONE =====
 % Verifica esistenza di condizioni di attacco diretto
 has_direct_attack_target :- direct_attack_conditions(P), enemy(P).
 
 % Verifica esistenza di condizioni di attacco cooperativo
 has_cooperative_attack_target :- cooperative_attack_conditions(P), enemy(P).
 
-% ===== CONDIZIONI STRATEGICHE =====
 % Condizioni per strategia di espansione
 early_game :- my_system_count(C), C <= 3.
 expansion_conditions :- early_game, neutral_opportunity.
@@ -101,7 +99,6 @@ cooperative_target(Enemy_S, P) :-
 
 cooperative_attack_conditions(P) :- cooperative_target(_, P).
 
-% ===== APPLICABILITÀ STRATEGIE =====
 % Strategia di espansione applicabile
 applicable_strategy(expansion) :- expansion_conditions.
 
@@ -114,15 +111,12 @@ applicable_strategy(direct_attack) :- has_direct_attack_target.
 % Strategia di attacco cooperativo applicabile
 applicable_strategy(cooperative_attack) :- has_cooperative_attack_target.
 
-
-% ===== SELEZIONE STRATEGIE =====
 % Per tutti i livelli di difficoltà, seleziona esattamente una strategia
 { chosen_strategy(S) : applicable_strategy(S) } <= 1 :- difficulty(medium).
 { chosen_strategy(S) : applicable_strategy(S) } <= 2 :- difficulty(hard).
 
 :~ #count{ S : chosen_strategy(S)} = C. [-C@2]
 
-% ===== IMPLEMENTAZIONE AZIONI STRATEGICHE =====
 % ESPANSIONE: attacca sistemi neutrali vicini
 target_neutral(From, To) :-
     chosen_strategy(expansion),
@@ -170,8 +164,6 @@ direct_attack(From, To) :-
     fleet(F,_,Ships,To,From,_),
     FromShips > ToShips + (20*Pr) + Ships.
 
-
-% ===== GENERAZIONE AZIONI SEND_FLEET =====
 % Calcola le navi da inviare per ogni tipo di azione
 expansion_ships(From, To, Ships) :-
     target_neutral(From, To),
@@ -206,7 +198,7 @@ attack_ships(From, To, Ships) :-
     Ships > 0,
     Ships < FromShips,
     fleet(F,_,Ships,To,From,_).
-% ===== IDENTIFICAZIONE GRUPPI DI ATTACCO COORDINATO =====
+
 % Identifica tutti i sistemi che possono partecipare all'attacco coordinato di un bersaglio specifico
 coordinated_attackers(From, To) :-
     chosen_strategy(cooperative_attack),
@@ -233,7 +225,6 @@ best_coordinated_target(To) :-
     Count >= 2,
     #max{C, T : attackers_count(T, C)} = Count.
 
-% ===== CALCOLO NAVI PER ATTACCO COORDINATO CORRETTO =====
 cooperative_ships(From, To, Ships) :-
     chosen_strategy(cooperative_attack),
     best_coordinated_target(To),
@@ -248,9 +239,6 @@ cooperative_ships(From, To, Ships) :-
     Ships > 0,
     Ships <= (TotalShips * 2) / 3,
     Ships > 0.
-
-% ===== VERSIONE ALTERNATIVA PIÙ SEMPLICE =====
-% Se preferisci una logica più diretta, usa questa versione:
 
 % Identifica sistemi che partecipano all'attacco cooperativo allo stesso bersaglio
 cooperative_participant(From, To) :-
@@ -288,7 +276,6 @@ cooperative_ships(From, To, Ships) :-
     chosen_strategy(cooperative_attack),
     best_coordinated_target(To).
 
-% ===== VINCOLI AGGIUNTIVI =====
 % Evita conflitti tra attacco diretto e cooperativo
 :- send_attack_fleet(F1, T, S1), send_cooperative_fleet(F2, T, S2).
 
@@ -303,15 +290,12 @@ send_fleet(From,To,Ships) :- send_defensive_fleet(From,To,Ships).
 send_fleet(From,To,Ships) :- send_attack_fleet(From,To,Ships).
 send_fleet(From,To,Ships) :- send_cooperative_fleet(From,To,Ships).
 
-
-% ===== VINCOLI DI SICUREZZA =====
 % Evita azioni che lascerebbero sistemi vulnerabili
 :- send_fleet(From, _, Ships), ships(From, Total), Ships >= Total.
 
 % Assicurati che le navi inviate siano positive
 :- send_fleet(_, _, Ships), Ships <= 0.
 
-% ===== OTTIMIZZAZIONI =====
 % Preferisci azioni che utilizzano sistemi con più navi
 :~ send_fleet(From, _, _), ships(From, Ships). [10 - Ships@1]
 
@@ -320,7 +304,6 @@ send_fleet(From,To,Ships) :- send_cooperative_fleet(From,To,Ships).
 
 #show send_fleet/3.
 #show chosen_strategy/1.
-% #show neutral_opportunity/0.
 #show applicable_strategy/1.
 #show enemy/1.
 #show enemy_system/2.

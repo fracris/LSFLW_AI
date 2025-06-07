@@ -37,11 +37,9 @@ next_step_to_border(From, To) :-
     DistFrom > DistTo,
     DistFrom > 0.
 
-
 % Verifica se un sistema ha navi assegnate dal primo file
 has_assignment(From) :- send_fleet(From, _, _).
 
-% Calcolo RILASSATO delle navi disponibili
 available_for_consolidation(From, Available) :-
     my_system(From),
     ships(From, Total),
@@ -50,15 +48,11 @@ available_for_consolidation(From, Available) :-
     Available = Total - 5,   % Riserva più bassa
     Available > 10.          % Soglia minima più bassa
 
-
-
-% BASE
 can_send_ships(From, Ships) :-
     available_for_consolidation(From, Available),
     Available >= 10,         % Soglia molto più bassa
     Ships = Available * 3 / 4,
     Ships >= 5.              % Minimo più basso
-
 
 % Un sistema può consolidare
 can_consolidate(From, To, Ships) :-
@@ -99,7 +93,6 @@ potential_consolidation(From, To, Ships) :- can_consolidate(From, To, Ships).
 max_actions(3) :- difficulty(medium).
 max_actions(5) :- difficulty(hard).
 
-
 {consolidation_action(From, To, Ships) : potential_consolidation(From, To, Ships)} :- max_actions(_).
 
 :- consolidation_action(From, To1, _), consolidation_action(From, To2, _), To1 != To2.
@@ -133,22 +126,6 @@ max_actions(5) :- difficulty(hard).
 
 % Premia azioni da sistemi vicini al confine (facoltativa)
 :~ consolidation_action(From, _, _), distance_to_border(From, Dist), Dist < 5. [-Dist@4]
-
-
-
-% ===== OUTPUT FINALE =====
-consolidation_fleet(From, To, Ships) :- consolidation_action(From, To, Ships).
-
-% ===== STATISTICHE E DEBUG =====
-consolidation_count(Count) :- #count{From, To : consolidation_fleet(From, To, _)} = Count.
-receiving_consolidation(To) :- consolidation_fleet(_, To, _).
-sending_consolidation(From) :- consolidation_fleet(From, _, _).
-
-% ===== DISPLAY =====
-#show consolidation_fleet/3.
-% #show can_consolidate/3.
-% #show dist_from_border/2.
-% #show can_consolidate_heavy/3.
 
 
 

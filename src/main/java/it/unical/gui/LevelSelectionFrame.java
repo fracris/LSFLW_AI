@@ -2,23 +2,23 @@ package it.unical.gui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import javax.swing.Timer;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import com.formdev.flatlaf.FlatDarkLaf;
 import it.unical.model.Difficulty;
 import it.unical.Main;
 
 public class LevelSelectionFrame extends JFrame {
+
     public LevelSelectionFrame() {
         FlatDarkLaf.install();
         setTitle("Seleziona Livello");
-        setSize(500, 400);
+        setSize(520, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setUndecorated(true);
         setOpacity(0f);
 
-        // Panel con sfondo a gradiente
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -32,7 +32,6 @@ public class LevelSelectionFrame extends JFrame {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        // Titolo
         JLabel title = new JLabel("Seleziona il livello");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 28f));
         title.setForeground(new Color(200,200,255,0));
@@ -42,19 +41,29 @@ public class LevelSelectionFrame extends JFrame {
         panel.add(title);
         panel.add(Box.createVerticalStrut(40));
 
-        // Pulsanti con animazione hover
-        Difficulty[] levels = {Difficulty.easy(), Difficulty.medium(), Difficulty.hard()};
-        for (Difficulty lvl : levels) {
-            JButton btn = new JButton(lvl.toString());
-            btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-            btn.setPreferredSize(new Dimension(200, 30));
-            btn.addActionListener(e -> {
-                Main.startGame(lvl);
-                dispose();
-            });
-            panel.add(btn);
-            panel.add(Box.createVerticalStrut(20));
-        }
+// Aggiunta dei pannelli per ogni livello
+        panel.add(createLevelPanel("Facile", Difficulty.easy(), new String[]{
+                "• Una sola strategia di gioco disponibile",
+                "• Nessun consolidamento delle truppe",
+                "• Possibilità di inviare un'azione alla volta"
+        }));
+
+        panel.add(Box.createVerticalStrut(20));
+
+        panel.add(createLevelPanel("Medio", Difficulty.medium(), new String[]{
+                "• Strategie disponibili: Attacco diretto, Cooperazione, Difesa o Espansione",
+                "• Una strategia attiva per ogni decisione",
+                "• Rafforzamento dei confini disponibile con un massimo di 3 invii"
+        }));
+
+        panel.add(Box.createVerticalStrut(20));
+
+        panel.add(createLevelPanel("Difficile", Difficulty.hard(), new String[]{
+                "• Due strategie selezionabili per ogni decisione",
+                "• Rafforzamento dei confini con un massimo di 5 invii",
+                "• Necessaria rapidità nelle decisioni"
+        }));
+
 
         panel.add(Box.createVerticalGlue());
         add(panel);
@@ -62,6 +71,39 @@ public class LevelSelectionFrame extends JFrame {
 
         fadeInWindow();
         fadeInTitle(title);
+    }
+
+    private JPanel createLevelPanel(String levelName, Difficulty difficulty, String[] points) {
+        JPanel levelPanel = new JPanel();
+        levelPanel.setLayout(new BoxLayout(levelPanel, BoxLayout.Y_AXIS));
+        levelPanel.setBackground(new Color(50, 50, 80));
+        levelPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JButton levelButton = new JButton(levelName);
+        levelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        levelButton.setFont(levelButton.getFont().deriveFont(Font.BOLD, 18f));
+        levelButton.setBackground(new Color(70,70,120));
+        levelButton.setForeground(Color.WHITE);
+        levelButton.setFocusPainted(false);
+        levelButton.setBorder(BorderFactory.createEmptyBorder(10,20,10,20));
+        levelButton.setContentAreaFilled(true);
+        levelButton.setOpaque(true);
+        levelButton.addActionListener(e -> {
+            Main.startGame(difficulty);
+            dispose();
+        });
+
+        levelPanel.add(levelButton);
+        levelPanel.add(Box.createVerticalStrut(10));
+
+        for (String point : points) {
+            JLabel pointLabel = new JLabel(point);
+            pointLabel.setForeground(Color.WHITE);
+            pointLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            levelPanel.add(pointLabel);
+        }
+
+        return levelPanel;
     }
 
     private void fadeInWindow() {
@@ -89,48 +131,7 @@ public class LevelSelectionFrame extends JFrame {
         t.start();
     }
 
-    // Pulsante con hover scaling
-    private static class AnimatedButton extends JButton {
-        private float scale = 1f;
-        public AnimatedButton(String text) {
-            super(text);
-            setFont(getFont().deriveFont(Font.BOLD, 18f));
-            setFocusPainted(false);
-            setBackground(new Color(70,70,120));
-            setForeground(Color.WHITE);
-            setBorder(BorderFactory.createEmptyBorder(10,20,10,20));
-            setContentAreaFilled(false);
-            setOpaque(true);
-
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseEntered(MouseEvent e) { animateScale(1.1f); }
-                @Override
-                public void mouseExited(MouseEvent e) { animateScale(1f); }
-            });
-        }
-        private void animateScale(float target) {
-            Timer t = new Timer(15, null);
-            t.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    scale += (target - scale) * 0.2f;
-                    if (Math.abs(scale - target) < 0.01f) { scale = target; ((Timer)e.getSource()).stop(); }
-                    repaint();
-                }
-            }); t.start();
-        }
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            int w = getWidth(), h = getHeight();
-            int sw = (int)(w * scale), sh = (int)(h * scale);
-            g2.translate((w-sw)/2, (h-sh)/2);
-            g2.scale(scale, scale);
-            super.paintComponent(g2);
-            g2.dispose();
-        }
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(LevelSelectionFrame::new);
     }
-
-    public static void main(String[] args) { SwingUtilities.invokeLater(LevelSelectionFrame::new); }
 }
