@@ -244,25 +244,16 @@ public class AIPlayer {
             System.out.println("Nessun answer set valido trovato per " + player.getName() + " nella fase 2");
         }
 
-        // FASE 2: Esegui la strategia scelta
+        StringBuilder aspFacts2 = parseFactsSets(outputPhase1.getOutput());
+
 
         // Aggiungi le strategie scelte ai fatti ASP
-        StringBuilder enhancedFacts = new StringBuilder(aspFacts);
+        //StringBuilder enhancedFacts = new StringBuilder(aspFacts);
         for (String sendfleet : actions1) {
-            enhancedFacts.append(sendfleet).append(".\n");
+            aspFacts2.append(sendfleet).append(".\n");
         }
 
 
-
-        // Debug: stampa i fatti ASP per la fase 2
-//        System.out.println("--- ASP Facts (Phase 2) START ---");
-//        System.out.println(enhancedFacts.toString());
-//        System.out.println("--- ASP Facts (Phase 2) END ---\n");
-
-        // Salva i fatti ASP della fase 2 in un file
-        //saveAspFactsToFile(enhancedFacts.toString(), "_phase2");
-
-        // Configura il solver DLV
         Handler handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
         OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
 
@@ -275,7 +266,7 @@ public class AIPlayer {
 
         // Imposta i fatti del gioco con le strategie scelte
         InputProgram factsProgramPhase2 = new ASPInputProgram();
-        factsProgramPhase2.addProgram(enhancedFacts.toString());
+        factsProgramPhase2.addProgram(aspFacts2.toString());
         handler2.addProgram(factsProgramPhase2);
 
         // Esegue DLV2 per la fase 2
@@ -314,6 +305,35 @@ public class AIPlayer {
         }
         return strategies;
     }
+
+
+    private StringBuilder parseFactsSets(String dlvOutput) {
+        StringBuilder factsBuilder = new StringBuilder();
+
+        // Tutti i predicati che ci interessano
+        String[] predicates = {
+                "enemy\\(\\d+\\)",
+                "enemy_system\\(\\d+,\\d+\\)",
+                "undirected_connected\\(\\d+,\\d+\\)",
+                "border_system\\(\\d+\\)",
+                "my_system\\(\\d+\\)",
+                "ships\\(\\d+,\\d+\\)",
+                "difficulty\\([a-z]+\\)",
+                "send_fleet\\(\\d+,\\d+,\\d+\\)"
+        };
+
+        for (String patternStr : predicates) {
+            Pattern pattern = Pattern.compile(patternStr);
+            Matcher matcher = pattern.matcher(dlvOutput);
+            while (matcher.find()) {
+                factsBuilder.append(matcher.group()).append(".\n");
+            }
+        }
+
+        return factsBuilder;
+    }
+
+
 
 
     private String convertGameStateToASP(boolean includeMetrics) {
