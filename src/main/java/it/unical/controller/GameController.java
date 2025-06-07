@@ -119,14 +119,6 @@ public class GameController {
     }
 
 
-    public void togglePause() {
-        if (paused) {
-            resumeGame();
-        } else {
-            showPauseDialog();
-        }
-    }
-
     private void pauseGame() {
         gameTimer.stop();
         paused = true;
@@ -141,41 +133,7 @@ public class GameController {
         }
     }
 
-    public void sendFleet(StarSystem source, StarSystem target, int ships) {
-        controllerExecutor.submit(() -> {
-            try {
-                int shipsToSend = Math.min(ships, source.getShips() - 1);
-                if (shipsToSend > 0) {
-                    Player humanPlayer = gameState.getHumanPlayer();
-                    gameState.sendFleet(humanPlayer, source, target, shipsToSend);
-                    System.out.println("Flotta inviata: " + shipsToSend + " navi da sistema " +
-                            source.getId() + " a sistema " + target.getId());
-                }
-            } catch (Exception e) {
-                System.err.println("Errore durante l'invio della flotta: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
-    }
 
-    public void backToMainMenu() {
-        controllerExecutor.submit(() -> {
-            try {
-                stopGame();
-
-                SwingUtilities.invokeLater(() -> {
-                    if (gameFrame != null) {
-                        gameFrame.dispose();
-                    }
-                    new it.unical.gui.MainMenuFrame();
-                });
-
-            } catch (Exception e) {
-                System.err.println("Errore durante il ritorno al menu principale: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
-    }
 
 
 
@@ -218,10 +176,7 @@ public class GameController {
         System.out.println("Tutti gli AIPlayer sono stati chiusi");
     }
 
-    private void shutdownExecutors() {
-        controllerExecutor.shutdown();
-        System.out.println("Executor del GameController chiusi");
-    }
+
 
     public void initGame() {
         controllerExecutor.submit(() -> {
@@ -386,37 +341,6 @@ public class GameController {
         playerTurn = (playerTurn + 1) % aiPlayersList.size();
     }
 
-    private void checkGameOver() {
-        if (gameState.isGameOver()) {
-            controllerExecutor.submit(() -> {
-                stopGame();
-
-                SwingUtilities.invokeLater(() -> {
-                    String message;
-                    if (gameState.getWinner() != null) {
-                        String winner = gameState.getWinner().getName();
-                        message = "Game Over! Ha vinto: " + winner;
-                        System.out.println("Game Over! Il vincitore è: " + winner);
-                    } else {
-                        message = "Game Over! Hai perso :(";
-                        System.out.println("Game Over! Mi dispiace. Hai perso la partita");
-                    }
-
-                    JOptionPane.showMessageDialog(
-                            gameFrame,
-                            message,
-                            "Game Over",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
-
-                    if (gameFrame != null) {
-                        gameFrame.dispose();
-                    }
-                    new it.unical.gui.MainMenuFrame();
-                });
-            });
-        }
-    }
 
     // ==================== GETTERS E SETTERS ====================
 
@@ -505,22 +429,181 @@ public class GameController {
         }
     }
 
-    // Modifica stopGame() per includere questa chiamata:
-    private void stopGame() {
-        gameRunning = false;
 
-        if (gameTimer != null && gameTimer.isRunning()) {
-            gameTimer.stop();
+
+
+    // Aggiungi un flag per controllare se il controller è in fase di shutdown
+    private volatile boolean isShuttingDown = false;
+
+    // Modifica il metodo sendFleet per controllare lo stato prima di sottomettere task
+    public void sendFleet(StarSystem source, StarSystem target, int ships) {
+
+        if (!canSubmitTasks()) {
+            return; // Silenzioso se in shutdown
+        }
+        // Controlla se siamo in shutdown prima di sottomettere il task
+        if (isShuttingDown || controllerExecutor.isShutdown()) {
+            System.out.println("Tentativo di inviare flotta ignorato: GameController in shutdown");
+            return;
         }
 
+        try {
+            controllerExecutor.submit(() -> {
+                try {
+                    // Doppio controllo all'interno del task
+                    if (isShuttingDown || !gameRunning) {
+                        return;
+                    }
+
+                    int shipsToSend = Math.min(ships, source.getShips() - 1);
+                    if (shipsToSend > 0) {
+                        Player humanPlayer = gameState.getHumanPlayer();
+                        gameState.sendFleet(humanPlayer, source, target, shipsToSend);
+                        System.out.println("Flotta inviata: " + shipsToSend + " navi da sistema " +
+                                source.getId() + " a sistema " + target.getId());
+                    }
+                } catch (Exception e) {
+                    if (!isShuttingDown) { // Non loggare errori durante shutdown
+                        System.err.println("Errore durante l'invio della flotta: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            System.out.println("Task rifiutato: GameController già in shutdown");
+        }
+    }
+
+    // Modifica checkGameOver per essere più robusto
+    private void checkGameOver() {
+        if (gameState.isGameOver() && !isShuttingDown) {
+            // Controlla se siamo già in shutdown per evitare chiamate multiple
+            if (isShuttingDown || controllerExecutor.isShutdown()) {
+                return;
+            }
+
+            try {
+                controllerExecutor.submit(() -> {
+                    if (isShuttingDown) return; // Doppio controllo
+
+                    stopGame();
+
+                    SwingUtilities.invokeLater(() -> {
+                        String message;
+                        if (gameState.getWinner() != null) {
+                            String winner = gameState.getWinner().getName();
+                            message = "Game Over! Ha vinto: " + winner;
+                            System.out.println("Game Over! Il vincitore è: " + winner);
+                        } else {
+                            message = "Game Over! Hai perso :(";
+                            System.out.println("Game Over! Mi dispiace. Hai perso la partita");
+                        }
+
+                        JOptionPane.showMessageDialog(
+                                gameFrame,
+                                message,
+                                "Game Over",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+
+                        if (gameFrame != null) {
+                            gameFrame.dispose();
+                        }
+                        new it.unical.gui.MainMenuFrame();
+                    });
+                });
+            } catch (RejectedExecutionException e) {
+                System.out.println("Task GameOver rifiutato: già in shutdown");
+                // Esegui direttamente su EDT come fallback
+                SwingUtilities.invokeLater(() -> {
+                    if (gameFrame != null) {
+                        gameFrame.dispose();
+                    }
+                    new it.unical.gui.MainMenuFrame();
+                });
+            }
+        }
+    }
+
+    // Modifica backToMainMenu per essere più robusto
+    public void backToMainMenu() {
+        if (isShuttingDown) {
+            return; // Evita chiamate multiple
+        }
+
+        try {
+            controllerExecutor.submit(() -> {
+                try {
+                    stopGame();
+
+                    SwingUtilities.invokeLater(() -> {
+                        if (gameFrame != null) {
+                            gameFrame.dispose();
+                        }
+                        new it.unical.gui.MainMenuFrame();
+                    });
+
+                } catch (Exception e) {
+                    if (!isShuttingDown) {
+                        System.err.println("Errore durante il ritorno al menu principale: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            System.out.println("Task backToMainMenu rifiutato: già in shutdown");
+            // Esegui direttamente come fallback
+            SwingUtilities.invokeLater(() -> {
+                if (gameFrame != null) {
+                    gameFrame.dispose();
+                }
+                new it.unical.gui.MainMenuFrame();
+            });
+        }
+    }
+
+
+
+    // Modifica stopGame con shutdown più ordinato
+    private void stopGame() {
+        // Imposta il flag di shutdown per prima cosa
+        isShuttingDown = true;
+        gameRunning = false;
+
+        System.out.println("Iniziando shutdown del GameController...");
+
+        // Ferma il timer
+        if (gameTimer != null && gameTimer.isRunning()) {
+            gameTimer.stop();
+            System.out.println("Timer del gioco fermato");
+        }
+
+        // Chiudi gli AI players
         shutdownAIPlayers();
 
-        // **NUOVO**: Cleanup globale DLV
+        // Cleanup globale DLV
         forceKillAllDLVProcesses();
 
+        // Chiudi l'executor con timeout
         shutdownExecutors();
 
         System.out.println("Gioco fermato completamente");
+    }
+
+    // Modifica shutdownExecutors per essere più ordinato
+    private void shutdownExecutors() {
+        System.out.println("Chiudendo executor del GameController...");
+
+        controllerExecutor.shutdown(); // Impedisce nuovi task
+
+        controllerExecutor.shutdownNow(); // Forza l'interruzione
+
+        System.out.println("Executor del GameController chiuso");
+    }
+
+    // Aggiungi un metodo per controllare se è safe sottomettere task
+    public boolean canSubmitTasks() {
+        return !isShuttingDown && !controllerExecutor.isShutdown() && gameRunning;
     }
 }
 
