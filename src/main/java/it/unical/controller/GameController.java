@@ -35,9 +35,7 @@ public class GameController {
         return t;
     });
 
-    // **PARAMETRO CHIAVE**: Intervallo tra i turni AI basato sul numero di giocatori
-    // Formula: 200 / (numero_giocatori_ai) ticks
-    // Con UPDATE_RATE=10ms: ogni 2000ms / numero_giocatori_ai
+
     private int getAITurnInterval() {
         int numAIPlayers = gameState.getPlayers().size() - 1; // Escludi il giocatore umano
         if (numAIPlayers <= 0) return Integer.MAX_VALUE; // Nessun AI

@@ -89,7 +89,7 @@ public class AIPlayer {
             return;
         }
 
-        createLogDirectory();
+
         this.isInitialized = true;
 
         // **NUOVO**: Aggiungi shutdown hook per pulizia
@@ -249,7 +249,7 @@ public class AIPlayer {
 
     private void executeEasyStrategy() throws Exception {
         String aspFacts = convertGameStateToASP(false);
-        saveAspFactsToFile(aspFacts);
+
 
         Handler handler = null;
         try {
@@ -299,7 +299,7 @@ public class AIPlayer {
             String difficultyLevel = (difficulty instanceof Difficulty.Medium) ? "medium" : "hard";
             aspFacts += "difficulty(" + difficultyLevel + ").\n";
 
-            saveAspFactsToFile(aspFacts, "_phase1");
+
 
             handler1 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
             OptionDescriptor option = new OptionDescriptor(" --printonlyoptimum");
@@ -343,7 +343,7 @@ public class AIPlayer {
                 aspFacts2.append(sendfleet).append(".\n");
             }
 
-            saveAspFactsToFile(aspFacts2.toString(), "_phase2");
+
 
             handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
             OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
@@ -410,16 +410,6 @@ public class AIPlayer {
         return isExecuting.get();
     }
 
-    // ... resto dei metodi rimangono uguali ...
-    private void createLogDirectory() {
-        File directory = new File(logDirectory);
-        if (!directory.exists()) {
-            boolean created = directory.mkdirs();
-            if (!created) {
-                System.err.println("ERRORE: Impossibile creare la directory per i log: " + logDirectory);
-            }
-        }
-    }
 
     private List<String> extractChosenStrategies(String dlvOutput) {
         List<String> strategies = new ArrayList<>();
@@ -497,6 +487,16 @@ public class AIPlayer {
             }
         }
 
+        for (Fleet fleet : gameState.getGameMap().getFleets()) {
+            facts.append("fleet(")
+                    .append(fleet.getId()).append(",")
+                    .append(fleet.getOwner().getId()).append(",")
+                    .append(fleet.getShips()).append(",")
+                    .append(fleet.getSource().getId()).append(",")
+                    .append(fleet.getDestination().getId()).append(",")
+                    .append((int) fleet.getProgress()).append(").\n");
+        }
+
         if (includeMetrics) {
             facts.append("\n% Dati storici per confronto\n");
             facts.append(previousMetrics.toAspFacts());
@@ -505,23 +505,6 @@ public class AIPlayer {
         return facts.toString();
     }
 
-    private void saveAspFactsToFile(String aspFacts, String suffix) {
-        String timestamp = dateFormat.format(new Date());
-        String filename = logDirectory + "player" + player.getId() + "_facts" + suffix + "_" + timestamp + ".asp";
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            writer.write("% Fatti ASP generati da " + player.getName() + " (ID: " + player.getId() + ")\n");
-            writer.write("% Data: " + new Date() + "\n\n");
-            writer.write(aspFacts);
-            System.out.println("Fatti ASP salvati in: " + filename);
-        } catch (IOException e) {
-            System.err.println("Errore durante il salvataggio dei fatti ASP su file: " + e.getMessage());
-        }
-    }
-
-    private void saveAspFactsToFile(String aspFacts) {
-        saveAspFactsToFile(aspFacts, "");
-    }
 
     private List<String> parseAnswerSets(String dlvOutput) {
         List<String> actions = new ArrayList<>();
@@ -550,7 +533,7 @@ public class AIPlayer {
     }
 
     private void executeActionsFromStrings(List<String> actions) {
-        saveExecutedActionsToFile(actions);
+
 
         boolean executedAny = false;
         for (String atomStr : actions) {
@@ -602,23 +585,7 @@ public class AIPlayer {
         }
     }
 
-    private void saveExecutedActionsToFile(List<String> actions) {
-        String timestamp = dateFormat.format(new Date());
-        String filename = logDirectory + "player" + player.getId() + "_actions_" + timestamp + ".txt";
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            writer.write("% Azioni eseguite da " + player.getName() + " (ID: " + player.getId() + ")\n");
-            writer.write("% Data: " + new Date() + "\n\n");
-
-            for (String action : actions) {
-                writer.write(action + "\n");
-            }
-
-            System.out.println("Azioni eseguite salvate in: " + filename);
-        } catch (IOException e) {
-            System.err.println("Errore durante il salvataggio delle azioni su file: " + e.getMessage());
-        }
-    }
 
     private StarSystem findSystemById(int id) {
         for (StarSystem system : gameState.getGameMap().getSystems()) {

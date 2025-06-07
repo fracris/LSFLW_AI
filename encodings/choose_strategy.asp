@@ -149,7 +149,6 @@ reinforce_border(From, To) :-
     FromShips > ToShips + 30,
     FromShips > 0.
 
-% ATTACCO DIRETTO: attacca nemico debole
 direct_attack(From, To) :-
     chosen_strategy(direct_attack),
     my_system(From),
@@ -159,7 +158,22 @@ direct_attack(From, To) :-
     ships(From, FromShips),
     ships(To, ToShips),
     production(P,Pr),
+    not flying_fleet(To,From),
     FromShips > ToShips + (20*Pr).
+
+flying_fleet(F,T) :- fleet(_,_,_,F,T,_).
+
+direct_attack(From, To) :-
+    chosen_strategy(direct_attack),
+    my_system(From),
+    enemy_system(To, P),
+    undirected_connected(From, To),
+    enemy_near(P),
+    ships(From, FromShips),
+    ships(To, ToShips),
+    production(P,Pr),
+    fleet(F,_,Ships,To,From,_),
+    FromShips > ToShips + (20*Pr) + Ships.
 
 
 % ===== GENERAZIONE AZIONI SEND_FLEET =====
@@ -185,8 +199,18 @@ attack_ships(From, To, Ships) :-
     production(To,P),
     Ships = ToShips + (20*P),
     Ships > 0,
-    Ships < FromShips.
+    Ships < FromShips,
+    not flying_fleet(To,From).
 
+attack_ships(From, To, Ships) :-
+    direct_attack(From, To),
+    ships(From, FromShips),
+    ships(To, ToShips),
+    production(To,P),
+    Ships = ToShips + (20*P) + Ships,
+    Ships > 0,
+    Ships < FromShips,
+    fleet(F,_,Ships,To,From,_).
 % ===== IDENTIFICAZIONE GRUPPI DI ATTACCO COORDINATO =====
 % Identifica tutti i sistemi che possono partecipare all'attacco coordinato di un bersaglio specifico
 coordinated_attackers(From, To) :-
