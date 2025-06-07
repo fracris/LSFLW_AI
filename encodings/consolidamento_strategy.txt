@@ -1,27 +1,3 @@
-% Identifica i sistemi controllati dall'IA (CORRETTO)
-my_system(S) :- system(S), ai_player(P), owner(S, P).
-
-% Identifica i giocatori nemici
-enemy(P) :- system(S), owner(S, P), not ai_player(P).
-
-% Identifica i sistemi nemici
-enemy_system(S, P) :- system(S), owner(S, P),enemy(P).
-
-% Connessioni non orientate tra sistemi
-undirected_connected(M, S) :- connected(M, S).
-undirected_connected(M, S) :- connected(S, M).
-
-% Identifica i sistemi di confine (SEMPLIFICATO)
-border_system(S) :-
-    my_system(S),
-    undirected_connected(S, N),
-    enemy_system(N, _).
-
-border_system(S) :-
-    my_system(S),
-    undirected_connected(S, N),
-    neutral_system(N).
-
 % Dominio delle distanze (puoi modificare 10)
 distance(0..10).
 
@@ -120,8 +96,8 @@ border_threat_level(BorderSys, low) :-
 potential_consolidation(From, To, Ships) :- can_consolidate(From, To, Ships).
 
 % ===== GESTIONE LIMITI PER DIFFICOLTÀ =====
-max_actions(5) :- difficulty(medium).
-max_actions(10) :- difficulty(hard).
+max_actions(3) :- difficulty(medium).
+max_actions(5) :- difficulty(hard).
 
 
 {consolidation_action(From, To, Ships) : potential_consolidation(From, To, Ships)} :- max_actions(_).

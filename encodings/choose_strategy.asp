@@ -114,11 +114,6 @@ applicable_strategy(direct_attack) :- has_direct_attack_target.
 % Strategia di attacco cooperativo applicabile
 applicable_strategy(cooperative_attack) :- has_cooperative_attack_target.
 
-% Strategia di default - CORRETTA per DLV 2.1
-applicable_strategy(expansion) :-
-    not defensive_conditions,
-    not has_direct_attack_target,
-    not has_cooperative_attack_target.
 
 % ===== SELEZIONE STRATEGIE =====
 % Per tutti i livelli di difficoltà, seleziona esattamente una strategia
