@@ -266,7 +266,7 @@ public class GameController {
     }
 
     private void update() {
-        if (!gameRunning) return;
+        if (!gameRunning || paused) return;
 
         tickCounter++;
 
@@ -456,7 +456,7 @@ public class GameController {
                     }
 
                     int shipsToSend = Math.min(ships, source.getShips() - 1);
-                    if (shipsToSend > 0) {
+                    if (shipsToSend > 0 && !paused) {
                         Player humanPlayer = gameState.getHumanPlayer();
                         gameState.sendFleet(humanPlayer, source, target, shipsToSend);
                         System.out.println("Flotta inviata: " + shipsToSend + " navi da sistema " +

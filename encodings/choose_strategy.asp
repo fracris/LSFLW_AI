@@ -148,7 +148,7 @@ direct_attack(From, To) :-
     ships(To, ToShips),
     production(P,Pr),
     not flying_fleet(To,From),
-    FromShips > ToShips + (20*Pr).
+    FromShips > ToShips + (80*Pr).
 
 flying_fleet(F,T) :- fleet(_,_,_,F,T,_).
 
@@ -162,7 +162,7 @@ direct_attack(From, To) :-
     ships(To, ToShips),
     production(P,Pr),
     fleet(F,_,Ships,To,From,_),
-    FromShips > ToShips + (20*Pr) + Ships.
+    FromShips > ToShips + (80*Pr) + Ships.
 
 % Calcola le navi da inviare per ogni tipo di azione
 expansion_ships(From, To, Ships) :-
@@ -184,7 +184,7 @@ attack_ships(From, To, Ships) :-
     ships(From, FromShips),
     ships(To, ToShips),
     production(To,P),
-    Ships = ToShips + (20*P),
+    Ships = ToShips + (80*P),
     Ships > 0,
     Ships < FromShips,
     not flying_fleet(To,From).
@@ -194,7 +194,7 @@ attack_ships(From, To, Ships) :-
     ships(From, FromShips),
     ships(To, ToShips),
     production(To,P),
-    Ships = ToShips + (20*P) + Ships,
+    Ships = ToShips + (80*P) + Ships,
     Ships > 0,
     Ships < FromShips,
     fleet(F,_,Ships,To,From,_).
@@ -234,7 +234,7 @@ cooperative_ships(From, To, Ships) :-
     production(To, ToProd),
     attackers_count(To, AttackerCount),
     % Calcola il contributo di questo sistema basato sul numero totale di attaccanti
-    RequiredTotal = ToShips + (ToProd * 20),
+    RequiredTotal = ToShips + (ToProd * 80),
     Ships = RequiredTotal / AttackerCount,
     Ships > 0,
     Ships <= (TotalShips * 2) / 3,
