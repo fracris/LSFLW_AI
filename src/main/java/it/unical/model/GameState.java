@@ -85,18 +85,14 @@ public class GameState {
         players.get(0).addSystem(systems.get(0));
         players.get(1).addSystem(systems.get(systems.size() - 1));
         if (numPlayers > 2) {
-            if(difficulty instanceof Difficulty.Easy){
+            if(difficulty instanceof Difficulty.Medium){
                 players.get(2).addSystem(systems.get(17));
             } else {
                 players.get(2).addSystem(systems.get(1));
             }
         }
         if (numPlayers > 3) {
-            if(difficulty instanceof Difficulty.Medium){
-                players.get(3).addSystem(systems.get(systems.size() / 4));
-            } else {
-                players.get(3).addSystem(systems.get(28));
-            }
+            players.get(3).addSystem(systems.get(28));
         }
     }
 

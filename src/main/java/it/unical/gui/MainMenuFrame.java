@@ -67,6 +67,16 @@ public class MainMenuFrame extends JFrame {
         panel.add(Box.createVerticalGlue());
 
 
+        // PULSANTE ESCI
+        JButton exitButton = new JButton("Esci");
+        exitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        exitButton.setPreferredSize(new Dimension(150, 30));
+        exitButton.addActionListener(e -> System.exit(0));
+
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(exitButton);
+        panel.add(Box.createVerticalGlue());
+
         // Aggiungi sezione crediti
         addCredits(panel);
 

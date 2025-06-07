@@ -36,7 +36,7 @@ public class GameMap {
                     new Point(500, (mapSize.height - 20) / 2 + 100),
                     new Point(600, (mapSize.height - 20) / 2),
             };
-            productionRates= new int[]{2, 1, 1, 3, 2, 2, 3, 1, 1, 1};
+            productionRates= new int[]{2, 1, 1, 3, 2, 2, 3, 1, 1, 2};
         } else if (difficulty instanceof Difficulty.Medium) {
             positions = new Point[]{
                     new Point(200, (mapSize.height - 20) / 2),
@@ -60,7 +60,7 @@ public class GameMap {
                     new Point(700, (mapSize.height - 20) / 2),
                     new Point(700, (mapSize.height - 20) / 2 + 100),
             };
-            productionRates= new int[]{2,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1};
+            productionRates= new int[]{2,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,2,1,2};
         } else {
             positions = new Point[]{
                     new Point(100, 100), new Point(100, 500),
