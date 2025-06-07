@@ -54,6 +54,19 @@ public class MainMenuFrame extends JFrame {
         panel.add(playButton);
         panel.add(Box.createVerticalGlue());
 
+        // PULSANTE TUTORIAL
+        JButton tutorialButton = new JButton("Tutorial");
+        tutorialButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tutorialButton.setPreferredSize(new Dimension(150, 30));
+        tutorialButton.addActionListener(e -> {
+            new TutorialDialog(this).setVisible(true);
+        });
+
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(tutorialButton);
+        panel.add(Box.createVerticalGlue());
+
+
         // Aggiungi sezione crediti
         addCredits(panel);
 

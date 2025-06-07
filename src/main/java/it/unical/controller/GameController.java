@@ -5,7 +5,9 @@ import it.unical.gui.GameFrame;
 import it.unical.gui.GamePanel;
 import it.unical.model.*;
 
-import java.awt.Dimension;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,26 +55,69 @@ public class GameController {
     public void showPauseDialog() {
         pauseGame();
 
-        SwingUtilities.invokeLater(() -> {
-            String[] options = {"Riprendi", "Menu Principale"};
-            int choice = JOptionPane.showOptionDialog(
-                    gameFrame,
-                    "Il gioco è in pausa",
-                    "Pausa",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.INFORMATION_MESSAGE,
-                    null,
-                    options,
-                    options[0]
-            );
+        // Creo un JDialog modale legato al gameFrame
+        JDialog pauseDialog = new JDialog(gameFrame, "Pausa", Dialog.ModalityType.APPLICATION_MODAL);
+        pauseDialog.setUndecorated(true);
 
-            if (choice == 0) {
+        // Pannello con messaggio
+        JPanel content = new JPanel(new BorderLayout());
+        content.setBackground(new Color(30, 30, 60));
+        content.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel label = new JLabel(
+                "<html><div style='text-align: center;'>"
+                        + "Gioco in pausa.<br>"
+                        + "Premi <b>P</b> per riprendere.<br>"
+                        + "Premi <b>ESC</b> per tornare al menu principale."
+                        + "</div></html>",
+                SwingConstants.CENTER
+        );
+        label.setForeground(Color.WHITE);
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 16f));
+        content.add(label, BorderLayout.CENTER);
+
+        pauseDialog.setContentPane(content);
+        pauseDialog.pack();
+
+        // Calcolo posizione: orizzontalmente centrato, 20px sotto la barra del frame
+        Point frameLoc = gameFrame.getLocationOnScreen();
+        int frameX = frameLoc.x;
+        int frameY = frameLoc.y;
+        int frameW = gameFrame.getWidth();
+
+        int dialogW = pauseDialog.getWidth();
+        int x = frameX + (frameW - dialogW) / 2;
+        int y = frameY + 60; // 20px di margine dal top
+        pauseDialog.setLocation(x, y);
+
+        // Key bindings
+        JRootPane root = pauseDialog.getRootPane();
+        InputMap im = root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = root.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke('P'), "resume");
+        im.put(KeyStroke.getKeyStroke('p'), "resume");
+        am.put("resume", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                pauseDialog.dispose();
                 resumeGame();
-            } else {
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "toMenu");
+        am.put("toMenu", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                pauseDialog.dispose();
                 backToMainMenu();
             }
         });
+
+        // Mostro il dialog; questo blocca finché non viene dispose()
+        pauseDialog.setVisible(true);
     }
+
 
     public void togglePause() {
         if (paused) {
@@ -175,15 +220,6 @@ public class GameController {
 
     private void shutdownExecutors() {
         controllerExecutor.shutdown();
-        try {
-            if (!controllerExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
-                controllerExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            controllerExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-
         System.out.println("Executor del GameController chiusi");
     }
 
