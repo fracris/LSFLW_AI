@@ -158,7 +158,6 @@ reinforce_ships(From, To, Ships) :-
     ships(To, ToShips),
     FromShips > 0,
     Ships = FromShips / 2,
-    Ships > EnemyShips,
     Ships > 0,
     Ships < FromShips.
 
@@ -329,9 +328,11 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 
 
 % Vieni penalizzato se scegli meno strategie di quanto ne sono applicabili
-:~ num_strategy(N,D), difficulty(D), #count{ S : chosen_strategy(S)} = C, Z=N-C. [Z@7]
+:~ num_strategy(N,D), difficulty(D), #count{ S : chosen_strategy(S)} = C, Z=N-C. [Z@8]
 
-:~ applicable_strategy(expansion), not chosen_strategy(expansion). [1@6]
+:~ applicable_strategy(expansion), not chosen_strategy(expansion). [1@7]
+
+:~ applicable_strategy(direct_attack) , applicable_strategy(cooperative_attack) , chosen_strategy(direct_attack), not chosen_strategy(cooperative_attack). [1@6]
 
 % Vieni penalizzato se puoi attaccare due nemici diversi ma attacchi quello con piu sistemi
 :~ direct_attack(F1,To1,_),
