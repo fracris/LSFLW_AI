@@ -333,7 +333,6 @@ public class AIPlayer {
             List<String> chosenStrategies = extractChosenStrategies(outputPhase1.getOutput());
             if (chosenStrategies.isEmpty()) {
                 System.err.println("Nessuna strategia trovata nella fase 1 per " + player.getName());
-                return;
             } else {
                 System.out.println(chosenStrategies);
             }

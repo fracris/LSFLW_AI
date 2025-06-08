@@ -156,13 +156,11 @@ reinforce_ships(From, To, Ships) :-
     undirected_connected(From, To),
     ships(From, FromShips),
     ships(To, ToShips),
-    FromShips > ToShips + 30,
     FromShips > 0,
     Ships = FromShips / 2,
     Ships > EnemyShips,
     Ships > 0,
     Ships < FromShips.
-
 
 % DIFENSIVA : difende i confini di sistemi persi
 defensive_ships(From, To, Ships) :-
@@ -213,6 +211,7 @@ direct_attack(From, To, AttackShips) :-
     ships(From, FromShips),
     flying_ships(To,From, TotalIncoming),
     enemy_system_ship(To, ToShips),
+    FromShips > AttackShips,
     AttackShips = ((FromShips * 3) / 4) + TotalIncoming.  % Mando il 75% delle mie navi
 
 % ATTACCO RILASSATO - solo se non posso fare l'aggressivo
@@ -223,11 +222,9 @@ direct_attack(From, To, AttackShips) :-
     enemy_system_ship(To, ToShips),
     flying_ships(To,From,TotalIncoming),
     production(To, Pr),
-    FromShips > ToShips + (30 * Pr),
+    FromShips > AttackShips,
     not aggressive_attack_possible(From, To),  % NON posso fare attacco aggressivo
-    AttackShips = (ToShips + TotalIncoming) + (30 * Pr).        % Mando giusto quello che serve + buffer produzione
-
-
+    AttackShips = (ToShips + TotalIncoming) + (30 * Pr).
 
 
 % Identifica tutti i sistemi che possono partecipare all'attacco coordinato
@@ -324,7 +321,8 @@ send_fleet(From,To,Ships) :- send_cooperative_fleet(From,To,Ships).
 send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 
 % Evita azioni che lascerebbero sistemi vulnerabili
-:- send_fleet(From, _, Ships), ships(From, Total), Ships > Total.
+% :- send_fleet(From, _, Ships), ships(From, Total), Ships > Total.
+
 
 % Assicurati che le navi inviate siano positive
 :- send_fleet(_, _, Ships), Ships <= 0.
