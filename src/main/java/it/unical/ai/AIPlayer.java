@@ -462,12 +462,6 @@ public class AIPlayer {
             player.getSystemsLost().clear();
         }
 
-        if (player.getSystemsGained() != null) {
-            for (StarSystem system : player.getSystemsGained()) {
-                facts.append("system_gained(").append(system.getId()).append("). ");
-            }
-            player.getSystemsGained().clear();
-        }
 
         for (StarSystem system : gameState.getGameMap().getSystems()) {
             facts.append("system(").append(system.getId()).append("). ");

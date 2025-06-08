@@ -72,8 +72,6 @@ border_enemy_system_strongest(My,Enemy) :-
 % Verifica perdite significative (2 o più sistemi)
 significant_losses :- #count{S : system_lost(S)} >= 2.
 
-% Verifica se l'IA ha guadagnato sistemi
-systems_gained :- system_gained(_).
 
 % Verifica se l'IA ha perso sistemi
 systems_lost :- system_lost(_).
@@ -99,17 +97,20 @@ cooperative_target(Enemy_S, P) :-
 
 expansion_conditions :- border_to_neutral(S).
 
-% io difendo o rinforzo da un sistema sorgente che a sua volta non è confinante con nessun sistema nemico
-candidate_my_system_helper(My_System) :-
-    my_system(My_System),
-    enemy_system(Enemy_System),
-    not border_to_enemy(My_System,Enemy_System).
+% 1) definisco chi ha almeno un confine con un nemico
+has_enemy_border(S) :-
+    border_to_enemy(S, _).
+
+% 2) scelgo i sistemi miei che NON hanno alcun confine con nemici
+candidate_my_system_helper(S) :-
+    my_system(S),
+    not has_enemy_border(S).
 
 % Condizioni per strategia difensiva
 defensive_conditions :- systems_lost.
 
 % Condizioni per strategia difensiva
-reinforce_conditions :- enemy_strengthened(P), border_enemy_system_strongest(_,P).
+reinforce_conditions :-  border_enemy_system_strongest(_,_).
 
 direct_attack_conditions:- border_to_enemy(S,P).
 
@@ -357,8 +358,8 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 %#show difficulty/1.
 
 % #show reinforce_conditions/0.
-#show enemy_strengthened/1.
 % #show border_enemy_system_strongest/2.
 % #show send_reinforce_fleet/3.
 #show direct_attack_conditions/0.
 #show direct_attack/3.
+#show candidate_my_system_helper/1.

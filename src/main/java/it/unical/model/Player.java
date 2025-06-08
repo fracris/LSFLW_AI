@@ -11,7 +11,6 @@ public class Player {
     private boolean isAI;
     private List<StarSystem> ownedSystems;
     private List<StarSystem> systemsLost;
-    private List<StarSystem> systemsGained;
     private List<Fleet> fleets;
 
     public Player(int id, String name, Color color, boolean isAI) {
@@ -22,7 +21,6 @@ public class Player {
         this.ownedSystems = new ArrayList<>();
         this.fleets = new ArrayList<>();
         this.systemsLost = new ArrayList<>();
-        this.systemsGained = new ArrayList<>();
 
     }
 
@@ -45,13 +43,6 @@ public class Player {
         return systemsLost;
     }
 
-    public List<StarSystem> getSystemsGained() {
-        return systemsGained;
-    }
-
-    public void setSystemsGained(StarSystem systemsGained) {
-        this.systemsGained.add(systemsGained);
-    }
 
     public void setSystemsLost(StarSystem system) {
         this.systemsLost.add(system);
