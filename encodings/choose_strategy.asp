@@ -17,7 +17,7 @@ undirected_connected(M, S) :- connected(S, M).
 border_system(S) :- my_system(S), undirected_connected(S, N), not my_system(N).
 
 % Sistemi di confine specifici per nemici e neutrali
-border_to_enemy(S, P) :- my_system(S), undirected_connected(S, N), enemy_system(N, P).
+border_to_enemy(S, N) :- my_system(S), undirected_connected(S, N), enemy_system(N, P).
 border_to_neutral(S) :- my_system(S), undirected_connected(S, N), neutral_system(N).
 
 % Identifica i sistemi ad alta produzione
@@ -36,19 +36,41 @@ my_ships_total(T) :- #sum{Ships, S : my_system(S), ships(S, Ships)} = T.
 % Somma delle navi nei sistemi nemici per ogni giocatore nemico
 enemy_ships_total(P, T) :- enemy(P), #sum{Ships, S : enemy_system(S, P), ships(S, Ships)} = T.
 
-% ===== ANALISI SITUAZIONE STORICA =====
-% Determina se un nemico si è rafforzato (solo se esistono dati precedenti)
+% Calcola il totale delle navi in volo verso ogni sistema nemico
+incoming_ships(Enemy, SystemId, TotalIncoming) :-
+    enemy_system(SystemId, Enemy),
+    #sum{FleetShips : fleet(_, Enemy, FleetShips, _, SystemId)} = TotalIncoming.
+
+% Regola principale: somma navi del sistema + navi in arrivo
+enemy_system_ship(SystemId, TotalShips) :-
+    enemy_system(SystemId, Enemy),
+    ships(SystemId, Ships),
+    incoming_ships(Enemy, SystemId, IncomingShips),
+    TotalShips = Ships + IncomingShips.
+
+% Somma delle produzioni di tutti i sistemi del nemico per ogni nemico
+enemy_production_total(P, T) :- enemy(P), #sum{Production, S : enemy_system(S, P), production(S, Production)} = T.
+
+
+% Determina se un nemico si è rafforzato
 enemy_strengthened(P) :-
     enemy(P),
     enemy_ships_total(P, Current),
+    enemy_production_total(P, ProductionTotal),
     previous_enemy_ships_total(P, Previous),
+    TotalPrevious = Previous + ProductionTotal * 2,
     Current > Previous.
+
+
+border_enemy_system_strongest(My,Enemy) :-
+    border_to_enemy(My, Enemy),
+    enemy_system_ship(Enemy,EnemyShips),
+    ships(My,MyShips),
+    MyShips < EnemyShips.
+
 
 % Verifica perdite significative (2 o più sistemi)
 significant_losses :- #count{S : system_lost(S)} >= 2.
-
-% Opportunità di espansione in presenza di sistemi neutrali
-neutral_opportunity :- neutral_system(_).
 
 % Verifica se l'IA ha guadagnato sistemi
 systems_gained :- system_gained(_).
@@ -68,34 +90,28 @@ ships_decreased :-
     previous_my_ships_total(Previous),
     Current < Previous.
 
-% Verifica esistenza di condizioni di attacco diretto
-has_direct_attack_target :- direct_attack_conditions(P), enemy(P).
-
-% Verifica esistenza di condizioni di attacco cooperativo
-has_cooperative_attack_target :- cooperative_attack_conditions(P), enemy(P).
-
-% Condizioni per strategia di espansione
-early_game :- my_system_count(C), C <= 3.
-expansion_conditions :- early_game, neutral_opportunity.
-expansion_conditions :- neutral_opportunity, not systems_lost.
-
-% Condizioni per strategia difensiva
-defensive_conditions :- systems_lost.
-defensive_conditions :- significant_losses.
-
-% Condizioni per attacco diretto
-enemy_near(P) :-
-    enemy(P),
-    my_system(S),
-    border_to_enemy(S,P).
-
-direct_attack_conditions(P) :- enemy_near(P).
 
 % Condizioni per attacco cooperativo
 cooperative_target(Enemy_S, P) :-
     enemy_system(Enemy_S, P),
-    #count{My_S : border_to_enemy(My_S, P), undirected_connected(My_S, Enemy_S)} =C,
+    #count{My_S : border_to_enemy(My_S, Enemy_S)} =C,
     C>=2.
+
+expansion_conditions :- border_to_neutral(S).
+
+% io difendo o rinforzo da un sistema sorgente che a sua volta non è confinante con nessun sistema nemico
+candidate_my_system_helper(My_System) :-
+    my_system(My_System),
+    enemy_system(Enemy_System),
+    not border_to_enemy(My_System,Enemy_System).
+
+% Condizioni per strategia difensiva
+defensive_conditions :- systems_lost.
+
+% Condizioni per strategia difensiva
+reinforce_conditions :- enemy_strengthened(P), border_enemy_system_strongest(_,P).
+
+direct_attack_conditions:- border_to_enemy(S,P).
 
 cooperative_attack_conditions(P) :- cooperative_target(_, P).
 
@@ -105,17 +121,20 @@ applicable_strategy(expansion) :- expansion_conditions.
 % Strategia difensiva applicabile
 applicable_strategy(defensive) :- defensive_conditions.
 
+% Strategia difensiva applicabile
+applicable_strategy(reinforce) :- reinforce_conditions.
+
 % Strategia di attacco diretto applicabile
-applicable_strategy(direct_attack) :- has_direct_attack_target.
+applicable_strategy(direct_attack) :- direct_attack_conditions.
 
 % Strategia di attacco cooperativo applicabile
-applicable_strategy(cooperative_attack) :- has_cooperative_attack_target.
+applicable_strategy(cooperative_attack) :- cooperative_attack_conditions(_).
 
 % Per tutti i livelli di difficoltà, seleziona esattamente una strategia
 { chosen_strategy(S) : applicable_strategy(S) } <= 1 :- difficulty(medium).
 { chosen_strategy(S) : applicable_strategy(S) } <= 2 :- difficulty(hard).
 
-:~ #count{ S : chosen_strategy(S)} = C. [-C@2]
+:~ #count{ S : chosen_strategy(S)} = C. [-C@3]
 
 % ESPANSIONE: attacca sistemi neutrali vicini
 target_neutral(From, To) :-
@@ -126,45 +145,42 @@ target_neutral(From, To) :-
     ships(From, Ships),
     Ships > 0.
 
-% DIFENSIVA: rinforza sistemi di confine
-reinforce_border(From, To) :-
-    chosen_strategy(defensive),
-    my_system(From),
-    my_system(To),
-    border_system(To),
+
+% RINFORZO: rinforza sistemi di confine
+reinforce_ships(From, To, Ships) :-
+    chosen_strategy(reinforce),
+    border_enemy_system_strongest(To, Enemy),
+    enemy_system_ship(Enemy,EnemyShips),
+    candidate_my_system_helper(From),
     undirected_connected(From, To),
     ships(From, FromShips),
     ships(To, ToShips),
     FromShips > ToShips + 30,
-    FromShips > 0.
+    FromShips > 0,
+    Ships = FromShips / 2,
+    Ships > EnemyShips,
+    Ships > 0,
+    Ships < FromShips.
 
-direct_attack(From, To) :-
-    chosen_strategy(direct_attack),
-    my_system(From),
-    enemy_system(To, P),
+
+% DIFENSIVA : difende i confini di sistemi persi
+defensive_ships(From, To, Ships) :-
+    chosen_strategy(defensive),
+    system_lost(LostSystem),
+    ships(LostSystem, LostSystemShips),
+    candidate_my_system_helper(From),
+    my_system(To),
     undirected_connected(From, To),
-    enemy_near(P),
+    undirected_connected(To, LostSystem),
     ships(From, FromShips),
     ships(To, ToShips),
-    production(P,Pr),
-    not flying_fleet(To,From),
-    FromShips > ToShips + (80*Pr).
+    FromShips > ToShips + 30,
+    FromShips > 0,
+    Ships = FromShips / 2,
+    ToShips < LostSystemShips + 30,
+    Ships > 0,
+    Ships < FromShips.
 
-flying_fleet(F,T) :- fleet(_,_,_,F,T,_).
-
-direct_attack(From, To) :-
-    chosen_strategy(direct_attack),
-    my_system(From),
-    enemy_system(To, P),
-    undirected_connected(From, To),
-    enemy_near(P),
-    ships(From, FromShips),
-    ships(To, ToShips),
-    production(P,Pr),
-    fleet(F,_,Ships,To,From,_),
-    FromShips > ToShips + (80*Pr) + Ships.
-
-% Calcola le navi da inviare per ogni tipo di azione
 expansion_ships(From, To, Ships) :-
     target_neutral(From, To),
     ships(From, TotalShips),
@@ -172,94 +188,47 @@ expansion_ships(From, To, Ships) :-
     Ships > 0,
     Ships < TotalShips.
 
-defensive_ships(From, To, Ships) :-
-    reinforce_border(From, To),
-    ships(From, TotalShips),
-    Ships = TotalShips / 2,
-    Ships > 0,
-    Ships < TotalShips.
 
-attack_ships(From, To, Ships) :-
-    direct_attack(From, To),
-    ships(From, FromShips),
-    ships(To, ToShips),
-    production(To,P),
-    Ships = ToShips + (80*P),
-    Ships > 0,
-    Ships < FromShips,
-    not flying_fleet(To,From).
-
-attack_ships(From, To, Ships) :-
-    direct_attack(From, To),
-    ships(From, FromShips),
-    ships(To, ToShips),
-    production(To,P),
-    Ships = ToShips + (80*P) + Ships,
-    Ships > 0,
-    Ships < FromShips,
-    fleet(F,_,Ships,To,From,_).
-
-% Identifica tutti i sistemi che possono partecipare all'attacco coordinato di un bersaglio specifico
-coordinated_attackers(From, To) :-
-    chosen_strategy(cooperative_attack),
+% Calcola il totale delle navi in volo verso ogni sistema nemico
+flying_ships(To, From,TotalIncoming) :-
+    enemy_system(To, _),
     my_system(From),
-    enemy_system(To, P),
-    cooperative_attack_conditions(P),
-    undirected_connected(From, To),
+    #sum{FleetShips : fleet(_, _, FleetShips, To, From)} = TotalIncoming.
+
+% ATTACCO AGGRESSIVO (priorità alta) - quando ho molte più navi
+aggressive_attack_possible(From, To) :-
+    chosen_strategy(direct_attack),
+    border_to_enemy(From, To),
     ships(From, FromShips),
-    ships(To, ToShips),
-    % Il sistema deve avere abbastanza navi per contribuire significativamente
-    FromShips >= 20,
-    FromShips > ToShips / 3.
+    enemy_system_ship(To, ToShips),
+    flying_ships(To,From,TotalIncoming),
+    FromShips > (ToShips * 2) + TotalIncoming .
 
-% Conta quanti sistemi possono attaccare ciascun bersaglio
-attackers_count(To, Count) :-
-    enemy_system(To, _),
-    chosen_strategy(cooperative_attack),
-    #count{From : coordinated_attackers(From, To)} = Count.
 
-% Seleziona il bersaglio con il maggior numero di potenziali attaccanti
-best_coordinated_target(To) :-
-    chosen_strategy(cooperative_attack),
-    attackers_count(To, Count),
-    Count >= 2,
-    #max{C, T : attackers_count(T, C)} = Count.
 
-cooperative_ships(From, To, Ships) :-
-    chosen_strategy(cooperative_attack),
-    best_coordinated_target(To),
-    coordinated_attackers(From, To),
-    ships(From, TotalShips),
-    ships(To, ToShips),
-    production(To, ToProd),
-    attackers_count(To, AttackerCount),
-    % Calcola il contributo di questo sistema basato sul numero totale di attaccanti
-    RequiredTotal = ToShips + (ToProd * 80),
-    Ships = RequiredTotal / AttackerCount,
-    Ships > 0,
-    Ships <= (TotalShips * 2) / 3,
-    Ships > 0.
+% ATTACCO AGGRESSIVO - mando una percentuale alta delle mie navi
+direct_attack(From, To, AttackShips) :-
+    aggressive_attack_possible(From, To),
+    ships(From, FromShips),
+    flying_ships(To,From, TotalIncoming),
+    enemy_system_ship(To, ToShips),
+    AttackShips = ((FromShips * 3) / 4) + TotalIncoming.  % Mando il 75% delle mie navi
 
-% Identifica sistemi che partecipano all'attacco cooperativo allo stesso bersaglio
-cooperative_participant(From, To) :-
-    chosen_strategy(cooperative_attack),
-    cooperative_attack(From, To).
+% ATTACCO RILASSATO - solo se non posso fare l'aggressivo
+direct_attack(From, To, AttackShips) :-
+    chosen_strategy(direct_attack),
+    border_to_enemy(From, To),
+    ships(From, FromShips),
+    enemy_system_ship(To, ToShips),
+    flying_ships(To,From,TotalIncoming),
+    production(To, Pr),
+    FromShips > ToShips + (30 * Pr),
+    not aggressive_attack_possible(From, To),  % NON posso fare attacco aggressivo
+    AttackShips = (ToShips + TotalIncoming) + (30 * Pr).        % Mando giusto quello che serve + buffer produzione
 
-% Conta partecipanti per ogni bersaglio
-cooperative_participants_count(To, Count) :-
-    chosen_strategy(cooperative_attack),
-    enemy_system(To, _),
-    #count{From : cooperative_participant(From, To)} = Count.
 
-% Calcola navi solo per bersagli con almeno 2 partecipanti
-cooperative_ships(From, To, Ships) :-
-    cooperative_participant(From, To),
-    cooperative_participants_count(To, Count),
-    Count >= 2,
-    ships(From, TotalShips),
-    Ships = (TotalShips * 2) / 3,
-    Ships > 0,
-    Ships < TotalShips.
+
+
 
 % ===== AZIONI FINALI CORRETTE =====
 {send_expansion_fleet(From, To, Ships): expansion_ships(From, To, Ships)} = 1 :-
@@ -268,7 +237,10 @@ cooperative_ships(From, To, Ships) :-
 {send_defensive_fleet(From, To, Ships): defensive_ships(From, To, Ships)} = 1 :-
     chosen_strategy(defensive).
 
-{send_attack_fleet(From, To, Ships): attack_ships(From, To, Ships)} = 1 :-
+{send_reinforce_fleet(From, To, Ships): reinforce_ships(From, To, Ships)} = 1 :-
+    chosen_strategy(reinforce).
+
+{send_attack_fleet(From, To, Ships): direct_attack(From, To, Ships)} = 1 :-
     chosen_strategy(direct_attack).
 
 % Per attacco cooperativo, genera azioni solo per il bersaglio selezionato
@@ -289,26 +261,44 @@ send_fleet(From,To,Ships) :- send_expansion_fleet(From,To,Ships).
 send_fleet(From,To,Ships) :- send_defensive_fleet(From,To,Ships).
 send_fleet(From,To,Ships) :- send_attack_fleet(From,To,Ships).
 send_fleet(From,To,Ships) :- send_cooperative_fleet(From,To,Ships).
+send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 
 % Evita azioni che lascerebbero sistemi vulnerabili
-:- send_fleet(From, _, Ships), ships(From, Total), Ships >= Total.
+:- send_fleet(From, _, Ships), ships(From, Total), Ships > Total.
 
 % Assicurati che le navi inviate siano positive
 :- send_fleet(_, _, Ships), Ships <= 0.
 
 % Preferisci azioni che utilizzano sistemi con più navi
-:~ send_fleet(From, _, _), ships(From, Ships). [10 - Ships@1]
+:~ send_fleet(From, _, _), ships(From, Ships). [-Ships@1]
 
 % Preferisci attaccare sistemi nemici più deboli
 :~ send_fleet(_, To, _), enemy_system(To, _), ships(To, Ships). [Ships@1]
 
+:~ send_expansion_fleet(_,To,_), production(To,P). [-P@2]
+
 #show send_fleet/3.
 #show chosen_strategy/1.
 #show applicable_strategy/1.
-#show enemy/1.
-#show enemy_system/2.
-#show undirected_connected/2.
-#show border_system/1.
-#show my_system/1.
-#show ships/2.
-#show difficulty/1.
+#show send_expansion_fleet/3.
+#show send_defensive_fleet/3.
+#show send_attack_fleet/3.
+#show send_cooperative_fleet/3.
+#show expansion_ships/3.
+#show attack_ships/3.
+#show cooperative_ships/3.
+#show defensive_ships/3.
+%#show enemy/1.
+%#show enemy_system/2.
+%#show undirected_connected/2.
+%#show border_system/1.
+%#show my_system/1.
+%#show ships/2.
+%#show difficulty/1.
+
+% #show reinforce_conditions/0.
+#show enemy_strengthened/1.
+% #show border_enemy_system_strongest/2.
+% #show send_reinforce_fleet/3.
+#show direct_attack_conditions/0.
+#show direct_attack/3.

@@ -5,6 +5,7 @@ import java.util.List;
 import java.awt.Color;
 import java.awt.Dimension;
 
+
 public class GameState {
     private GameMap gameMap;
     private List<Player> players;
@@ -119,11 +120,12 @@ public class GameState {
         count++;
     }
 
+    private int fleetId = 0;
 
     public Fleet sendFleet(Player who, StarSystem source, StarSystem target, int ships) {
         if (source.getOwner() == who && source.getShips() >= ships) {
             source.removeShips(ships);
-            int fleetId = gameMap.getFleets().size();
+            fleetId++;
             Fleet f = new Fleet(fleetId, who, ships, source, target, 0.02);
             who.addFleet(f);
             gameMap.addFleet(f);

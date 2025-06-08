@@ -134,9 +134,6 @@ public class GameController {
     }
 
 
-
-
-
     private void shutdownAIPlayers() {
         if (aiPlayers.isEmpty()) return;
 
@@ -606,5 +603,3 @@ public class GameController {
         return !isShuttingDown && !controllerExecutor.isShutdown() && gameRunning;
     }
 }
-
-

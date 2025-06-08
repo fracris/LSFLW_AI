@@ -1,3 +1,4 @@
+
 package it.unical.ai;
 
 import java.io.*;
@@ -296,6 +297,9 @@ public class AIPlayer {
         try {
             // FASE 1
             String aspFacts = convertGameStateToASP(true);
+
+            System.out.println(aspFacts);
+
             String difficultyLevel = (difficulty instanceof Difficulty.Medium) ? "medium" : "hard";
             aspFacts += "difficulty(" + difficultyLevel + ").\n";
 
@@ -330,6 +334,8 @@ public class AIPlayer {
             if (chosenStrategies.isEmpty()) {
                 System.err.println("Nessuna strategia trovata nella fase 1 per " + player.getName());
                 return;
+            } else {
+                System.out.println(chosenStrategies);
             }
 
             List<String> actions1 = parseAnswerSets(outputPhase1.getOutput());
@@ -338,42 +344,42 @@ public class AIPlayer {
             }
 
             // FASE 2
-            StringBuilder aspFacts2 = parseFactsSets(outputPhase1.getOutput());
-            for (String sendfleet : actions1) {
-                aspFacts2.append(sendfleet).append(".\n");
-            }
-
-
-
-            handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-            OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
-            handler2.addOption(option2);
-
-            InputProgram executionProgram = new ASPInputProgram();
-            executionProgram.addFilesPath(consolidamento_strategy);
-            handler2.addProgram(executionProgram);
-
-            InputProgram factsProgramPhase2 = new ASPInputProgram();
-            factsProgramPhase2.addProgram(aspFacts2.toString());
-            handler2.addProgram(factsProgramPhase2);
-
-            Output outputPhase2 = executeDLVWithTimeout(handler2);
-
-            if (outputPhase2 != null) {
-                System.out.println("--- DLV Output (Phase 2) per " + player.getName() + " ---");
-                System.out.println(outputPhase2.getOutput());
-            }
-
-            if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
-                System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2) per " + player.getName() + ": " +
-                        (outputPhase2 != null ? outputPhase2.getErrors() : "output null"));
-                return;
-            }
-
-            List<String> actions2 = parseAnswerSets2(outputPhase2.getOutput());
-            if (!actions2.isEmpty()) {
-                executeActionsFromStrings(actions2);
-            }
+//            StringBuilder aspFacts2 = parseFactsSets(outputPhase1.getOutput());
+//            for (String sendfleet : actions1) {
+//                aspFacts2.append(sendfleet).append(".\n");
+//            }
+//
+//
+//
+//            handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+//            OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
+//            handler2.addOption(option2);
+//
+//            InputProgram executionProgram = new ASPInputProgram();
+//            executionProgram.addFilesPath(consolidamento_strategy);
+//            handler2.addProgram(executionProgram);
+//
+//            InputProgram factsProgramPhase2 = new ASPInputProgram();
+//            factsProgramPhase2.addProgram(aspFacts2.toString());
+//            handler2.addProgram(factsProgramPhase2);
+//
+//            Output outputPhase2 = executeDLVWithTimeout(handler2);
+//
+//            if (outputPhase2 != null) {
+//                System.out.println("--- DLV Output (Phase 2) per " + player.getName() + " ---");
+//                System.out.println(outputPhase2.getOutput());
+//            }
+//
+//            if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
+//                System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2) per " + player.getName() + ": " +
+//                        (outputPhase2 != null ? outputPhase2.getErrors() : "output null"));
+//                return;
+//            }
+//
+//            List<String> actions2 = parseAnswerSets2(outputPhase2.getOutput());
+//            if (!actions2.isEmpty()) {
+//                executeActionsFromStrings(actions2);
+//            }
         } finally {
             // **NUOVO**: Cleanup di entrambi gli handler
             if (handler1 != null) {
@@ -447,34 +453,34 @@ public class AIPlayer {
     private String convertGameStateToASP(boolean includeMetrics) {
         StringBuilder facts = new StringBuilder();
 
-        facts.append("ai_player(").append(player.getId()).append(").\n");
+        facts.append("ai_player(").append(player.getId()).append("). ");
 
         if (player.getSystemsLost() != null) {
             for (StarSystem system : player.getSystemsLost()) {
-                facts.append("system_lost(").append(system.getId()).append(").\n");
+                facts.append("system_lost(").append(system.getId()).append("). ");
             }
             player.getSystemsLost().clear();
         }
 
         if (player.getSystemsGained() != null) {
             for (StarSystem system : player.getSystemsGained()) {
-                facts.append("system_gained(").append(system.getId()).append(").\n");
+                facts.append("system_gained(").append(system.getId()).append("). ");
             }
             player.getSystemsGained().clear();
         }
 
         for (StarSystem system : gameState.getGameMap().getSystems()) {
-            facts.append("system(").append(system.getId()).append(").\n");
+            facts.append("system(").append(system.getId()).append("). ");
             if (system.getOwner() != null) {
                 facts.append("owner(").append(system.getId()).append(",")
-                        .append(system.getOwner().getId()).append(").\n");
+                        .append(system.getOwner().getId()).append("). ");
             } else {
-                facts.append("neutral_system(").append(system.getId()).append(").\n");
+                facts.append("neutral_system(").append(system.getId()).append("). ");
             }
             facts.append("ships(").append(system.getId()).append(",")
-                    .append(system.getShips()).append(").\n");
+                    .append(system.getShips()).append("). ");
             facts.append("production(").append(system.getId()).append(",")
-                    .append(system.getProductionRate()).append(").\n");
+                    .append(system.getProductionRate()).append("). ");
         }
 
         for (StarSystem system : gameState.getGameMap().getSystems()) {
@@ -482,7 +488,7 @@ public class AIPlayer {
                 if (system.getId() < connected.getId()) {
                     facts.append("connected(")
                             .append(system.getId()).append(",")
-                            .append(connected.getId()).append(").\n");
+                            .append(connected.getId()).append("). ");
                 }
             }
         }
@@ -493,8 +499,7 @@ public class AIPlayer {
                     .append(fleet.getOwner().getId()).append(",")
                     .append(fleet.getShips()).append(",")
                     .append(fleet.getSource().getId()).append(",")
-                    .append(fleet.getDestination().getId()).append(",")
-                    .append((int) fleet.getProgress()).append(").\n");
+                    .append(fleet.getDestination().getId()).append("). ");
         }
 
         if (includeMetrics) {
@@ -598,3 +603,4 @@ public class AIPlayer {
         return player;
     }
 }
+
