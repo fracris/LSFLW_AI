@@ -131,10 +131,10 @@ applicable_strategy(direct_attack) :- direct_attack_conditions.
 applicable_strategy(cooperative_attack) :- cooperative_attack_conditions(_).
 
 % Per tutti i livelli di difficoltà, seleziona esattamente una strategia
-{ chosen_strategy(S) : applicable_strategy(S) } <= 1 :- difficulty(medium).
-{ chosen_strategy(S) : applicable_strategy(S) } <= 2 :- difficulty(hard).
+{ chosen_strategy(S) : applicable_strategy(S) } <= N :- difficulty(D), num_strategy(N,D).
 
-:~ #count{ S : chosen_strategy(S)} = C. [-C@3]
+num_strategy(1,medium).
+num_strategy(2,hard).
 
 % ESPANSIONE: attacca sistemi neutrali vicini
 target_neutral(From, To) :-
@@ -285,6 +285,8 @@ cooperative_ships(From, To, Ships) :-
 % Evita conflitti tra attacco diretto e cooperativo
 :- send_attack_fleet(F1, T, S1), send_cooperative_fleet(F2, T, S2).
 
+:- send_fleet(From,To1,_), send_fleet(From,To2,_), To1!=To2.
+
 % Assicurati che tutti gli attacchi cooperativi vadano allo stesso bersaglio
 :- send_cooperative_fleet(F1, T1, S1), send_cooperative_fleet(F2, T2, S2), T1 != T2.
 
@@ -303,13 +305,37 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 % Assicurati che le navi inviate siano positive
 :- send_fleet(_, _, Ships), Ships <= 0.
 
-% Preferisci azioni che utilizzano sistemi con più navi
-:~ send_fleet(From, _, _), ships(From, Ships). [-Ships@1]
 
-% Preferisci attaccare sistemi nemici più deboli
-:~ send_fleet(_, To, _), enemy_system(To, _), ships(To, Ships). [Ships@1]
+% Vieni penalizzato se scegli meno strategie di quanto ne sono applicabili
+:~ num_strategy(N,D), difficulty(D), #count{ S : chosen_strategy(S)} = C, Z=N-C. [Z@7]
 
-:~ send_expansion_fleet(_,To,_), production(To,P). [-P@2]
+:~ applicable_strategy(expansion), not chosen_strategy(expansion). [1@6]
+
+% Vieni penalizzato se puoi attaccare due nemici diversi ma attacchi quello con piu sistemi
+:~ direct_attack(F1,To1,_),
+    direct_attack(F2,To2,_),
+    send_fleet(F1,To1,_),
+    enemy_system(To1,P1),
+    enemy_system(To2,P2),
+    enemy_system_count(P1,C1),
+    enemy_system_count(P2,C2),
+    P1!=P2,
+    C1>C2,
+    N=C1-C2. [N@5]
+
+% Vieni penalizzato se hai perso sistemi e non ti difendi
+:~ significant_losses, not chosen_strategy(defensive). [15@4]
+% Vieni penalizzato se hai come strategia applicabile la cooperative ma non la scegli
+:~ applicable_strategy(cooperative_attack), chosen_strategy(S), S != cooperative_attack. [10@4]
+
+% Vieni penalizzato se ti espandi verso un sistema che ha un tasso di produzione piu basso rispetto ad un altro
+:~ send_expansion_fleet(_,To,_), production(To,P), Z=5-P. [Z@3]
+
+:~ chosen_strategy(direct_attack),border_to_enemy(_,P), enemy_strengthened(P). [8@2]
+:~ chosen_strategy(expansion), systems_lost. [7@2]
+:~ chosen_strategy(cooperative_attack), attackers_count(To, C), C < 3. [C*2@1]
+
+
 
 #show send_fleet/3.
 #show chosen_strategy/1.
