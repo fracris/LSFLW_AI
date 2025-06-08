@@ -229,6 +229,40 @@ direct_attack(From, To, AttackShips) :-
 
 
 
+% Identifica tutti i sistemi che possono partecipare all'attacco coordinato di un bersaglio specifico
+coordinated_attackers(From, To) :-
+    chosen_strategy(cooperative_attack),
+    border_to_enemy(From, To),
+    ships(From, FromShips),
+    ships(To, ToShips),
+    FromShips > ToShips / 3.
+
+% Conta quanti sistemi possono attaccare ciascun bersaglio
+attackers_count(To, Count) :-
+    enemy_system(To, _),
+    chosen_strategy(cooperative_attack),
+    #count{From : coordinated_attackers(From, To)} = Count.
+
+% Seleziona il bersaglio con il maggior numero di potenziali attaccanti
+best_coordinated_target(To) :-
+    chosen_strategy(cooperative_attack),
+    attackers_count(To, Count),
+    Count >= 2,
+    #max{C, T : attackers_count(T, C)} = Count.
+
+cooperative_ships(From, To, Ships) :-
+    chosen_strategy(cooperative_attack),
+    best_coordinated_target(To),
+    coordinated_attackers(From, To),
+    ships(From, TotalShips),
+    ships(To, ToShips),
+    production(To, ToProd),
+    attackers_count(To, AttackerCount),
+    flying_ships(To,From,TotalIncoming),
+    RequiredTotal = ToShips + (ToProd * 80),
+    Ships = RequiredTotal / AttackerCount + TotalIncoming,
+    Ships <= (TotalShips * 2) / 3.
+
 
 % ===== AZIONI FINALI CORRETTE =====
 {send_expansion_fleet(From, To, Ships): expansion_ships(From, To, Ships)} = 1 :-
