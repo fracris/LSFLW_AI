@@ -314,7 +314,7 @@ public class GameController {
         Player currentAIPlayer = aiPlayersList.get(playerTurn);
         AIPlayer aiPlayerInstance = aiPlayers.get(currentAIPlayer);
 
-        if (aiPlayerInstance != null) {
+        if (aiPlayerInstance != null && (!currentAIPlayer.getOwnedSystems().isEmpty() || currentAIPlayer.getTotalShips()!=0)) {
             // Esegui il turno in modo asincrono
             controllerExecutor.submit(() -> {
                 try {

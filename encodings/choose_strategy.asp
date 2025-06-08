@@ -230,12 +230,12 @@ direct_attack(From, To, AttackShips) :-
 
 
 
-% Identifica tutti i sistemi che possono partecipare all'attacco coordinato di un bersaglio specifico
+% Identifica tutti i sistemi che possono partecipare all'attacco coordinato
 coordinated_attackers(From, To) :-
     chosen_strategy(cooperative_attack),
     border_to_enemy(From, To),
     ships(From, FromShips),
-    ships(To, ToShips),
+    enemy_system_ship(To, ToShips),
     FromShips > ToShips / 3.
 
 % Conta quanti sistemi possono attaccare ciascun bersaglio
@@ -251,19 +251,42 @@ best_coordinated_target(To) :-
     Count >= 2,
     #max{C, T : attackers_count(T, C)} = Count.
 
+% ===== COOPERATIVE ATTACK AGGRESSIVO (priorità alta) =====
+% Controlla se è possibile un attacco cooperativo aggressivo
+aggressive_cooperative_possible(To) :-
+    chosen_strategy(cooperative_attack),
+    best_coordinated_target(To),
+    enemy_system_ship(To, ToShips),
+    flying_ships(To, _, TotalIncoming),
+    attackers_count(To, AttackerCount),
+    #sum{FromShips : coordinated_attackers(From, To), ships(From, FromShips)} = TotalAttackerShips,
+    TotalAttackerShips >  ((ToShips + TotalIncoming) * 5)/2 .  % Forza schiacciante disponibile
+
+% ATTACCO COOPERATIVO AGGRESSIVO - devastazione totale
+cooperative_ships(From, To, Ships) :-
+    aggressive_cooperative_possible(To),
+    coordinated_attackers(From, To),
+    ships(From, TotalShips),
+    flying_ships(To, From, MyIncoming),
+    Ships = ((TotalShips * 3) / 4) + MyIncoming,  % 75% delle mie navi + compenso per le mie navi in volo
+    Ships <= TotalShips.
+
+% ===== COOPERATIVE ATTACK RILASSATO (fallback) =====
+% ATTACCO COOPERATIVO RILASSATO - solo se non posso fare l'aggressivo
 cooperative_ships(From, To, Ships) :-
     chosen_strategy(cooperative_attack),
     best_coordinated_target(To),
     coordinated_attackers(From, To),
+    not aggressive_cooperative_possible(To),  % NON posso fare attacco aggressivo
     ships(From, TotalShips),
-    ships(To, ToShips),
+    enemy_system_ship(To, ToShips),
     production(To, ToProd),
     attackers_count(To, AttackerCount),
-    flying_ships(To,From,TotalIncoming),
-    RequiredTotal = ToShips + (ToProd * 80),
-    Ships = RequiredTotal / AttackerCount + TotalIncoming,
-    Ships <= (TotalShips * 2) / 3.
-
+    flying_ships(To, From, MyIncoming),
+    RequiredTotal = ToShips + (ToProd * 50),  % Buffer produzione ridotto per cooperativo
+    MyShare = RequiredTotal / AttackerCount,
+    Ships = MyShare + MyIncoming,
+    Ships <= (TotalShips * 2) / 3.  % Non più del 66% delle mie navi
 
 % ===== AZIONI FINALI CORRETTE =====
 {send_expansion_fleet(From, To, Ships): expansion_ships(From, To, Ships)} = 1 :-
@@ -364,3 +387,5 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 #show direct_attack/3.
 #show candidate_my_system_helper/1.
 #show incoming_ships/2.
+#show aggressive_cooperative_possible/1.
+#show aggressive_attack_possible/2.
