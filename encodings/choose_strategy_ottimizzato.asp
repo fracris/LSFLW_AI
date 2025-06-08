@@ -205,3 +205,11 @@ send_fleet(From, To, Ships) :- send_cooperative_fleet(From, To, Ships).
 
 #show send_fleet/3.
 #show chosen_strategy/1.
+#show applicable_strategy/1.
+#show enemy/1.
+#show enemy_system/2.
+#show undirected_connected/2.
+#show border_system/1.
+#show my_system/1.
+#show ships/2.
+#show difficulty/1.

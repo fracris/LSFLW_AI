@@ -94,7 +94,7 @@ direct_attack_conditions(P) :- enemy_near(P).
 % Condizioni per attacco cooperativo
 cooperative_target(Enemy_S, P) :-
     enemy_system(Enemy_S, P),
-    #count{My_S : border_to_enemy(My_S, P), connected(My_S, Enemy_S)} =C,
+    #count{My_S : border_to_enemy(My_S, P), undirected_connected(My_S, Enemy_S)} =C,
     C>=2.
 
 cooperative_attack_conditions(P) :- cooperative_target(_, P).

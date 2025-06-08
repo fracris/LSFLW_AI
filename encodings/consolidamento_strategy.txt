@@ -1,4 +1,4 @@
-% Dominio delle distanze (puoi modificare 10)
+% Dominio delle distanze
 distance(0..10).
 
 % Distanza base: 0 per i sistemi di confine
