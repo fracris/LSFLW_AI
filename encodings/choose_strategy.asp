@@ -37,7 +37,7 @@ my_ships_total(T) :- #sum{Ships, S : my_system(S), ships(S, Ships)} = T.
 enemy_ships_total(P, T) :- enemy(P), #sum{Ships, S : enemy_system(S, P), ships(S, Ships)} = T.
 
 % Calcola il totale delle navi in volo verso ogni sistema nemico
-incoming_ships(Enemy, SystemId, TotalIncoming) :-
+incoming_ships(SystemId, TotalIncoming) :-
     enemy_system(SystemId, Enemy),
     #sum{FleetShips : fleet(_, Enemy, FleetShips, _, SystemId)} = TotalIncoming.
 
@@ -45,7 +45,7 @@ incoming_ships(Enemy, SystemId, TotalIncoming) :-
 enemy_system_ship(SystemId, TotalShips) :-
     enemy_system(SystemId, Enemy),
     ships(SystemId, Ships),
-    incoming_ships(Enemy, SystemId, IncomingShips),
+    incoming_ships(SystemId, IncomingShips),
     TotalShips = Ships + IncomingShips.
 
 % Somma delle produzioni di tutti i sistemi del nemico per ogni nemico
@@ -349,13 +349,13 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 #show attack_ships/3.
 #show cooperative_ships/3.
 #show defensive_ships/3.
-%#show enemy/1.
-%#show enemy_system/2.
-%#show undirected_connected/2.
-%#show border_system/1.
-%#show my_system/1.
-%#show ships/2.
-%#show difficulty/1.
+#show enemy/1.
+#show enemy_system/2.
+#show undirected_connected/2.
+#show border_system/1.
+#show my_system/1.
+#show ships/2.
+#show difficulty/1.
 
 % #show reinforce_conditions/0.
 % #show border_enemy_system_strongest/2.
@@ -363,3 +363,4 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 #show direct_attack_conditions/0.
 #show direct_attack/3.
 #show candidate_my_system_helper/1.
+#show incoming_ships/2.

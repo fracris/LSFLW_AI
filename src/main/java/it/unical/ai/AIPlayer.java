@@ -344,42 +344,42 @@ public class AIPlayer {
             }
 
             // FASE 2
-//            StringBuilder aspFacts2 = parseFactsSets(outputPhase1.getOutput());
-//            for (String sendfleet : actions1) {
-//                aspFacts2.append(sendfleet).append(".\n");
-//            }
-//
-//
-//
-//            handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
-//            OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
-//            handler2.addOption(option2);
-//
-//            InputProgram executionProgram = new ASPInputProgram();
-//            executionProgram.addFilesPath(consolidamento_strategy);
-//            handler2.addProgram(executionProgram);
-//
-//            InputProgram factsProgramPhase2 = new ASPInputProgram();
-//            factsProgramPhase2.addProgram(aspFacts2.toString());
-//            handler2.addProgram(factsProgramPhase2);
-//
-//            Output outputPhase2 = executeDLVWithTimeout(handler2);
-//
-//            if (outputPhase2 != null) {
-//                System.out.println("--- DLV Output (Phase 2) per " + player.getName() + " ---");
-//                System.out.println(outputPhase2.getOutput());
-//            }
-//
-//            if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
-//                System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2) per " + player.getName() + ": " +
-//                        (outputPhase2 != null ? outputPhase2.getErrors() : "output null"));
-//                return;
-//            }
-//
-//            List<String> actions2 = parseAnswerSets2(outputPhase2.getOutput());
-//            if (!actions2.isEmpty()) {
-//                executeActionsFromStrings(actions2);
-//            }
+            StringBuilder aspFacts2 = parseFactsSets(outputPhase1.getOutput());
+            for (String sendfleet : actions1) {
+                aspFacts2.append(sendfleet).append(".\n");
+            }
+
+
+
+            handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+            OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
+            handler2.addOption(option2);
+
+            InputProgram executionProgram = new ASPInputProgram();
+            executionProgram.addFilesPath(consolidamento_strategy);
+            handler2.addProgram(executionProgram);
+
+            InputProgram factsProgramPhase2 = new ASPInputProgram();
+            factsProgramPhase2.addProgram(aspFacts2.toString());
+            handler2.addProgram(factsProgramPhase2);
+
+            Output outputPhase2 = executeDLVWithTimeout(handler2);
+
+            if (outputPhase2 != null) {
+                System.out.println("--- DLV Output (Phase 2) per " + player.getName() + " ---");
+                System.out.println(outputPhase2.getOutput());
+            }
+
+            if (outputPhase2 == null || (outputPhase2.getErrors() != null && !outputPhase2.getErrors().isEmpty())) {
+                System.err.println("Errore durante l'esecuzione di EMBASP (Phase 2) per " + player.getName() + ": " +
+                        (outputPhase2 != null ? outputPhase2.getErrors() : "output null"));
+                return;
+            }
+
+            List<String> actions2 = parseAnswerSets2(outputPhase2.getOutput());
+            if (!actions2.isEmpty()) {
+                executeActionsFromStrings(actions2);
+            }
         } finally {
             // **NUOVO**: Cleanup di entrambi gli handler
             if (handler1 != null) {

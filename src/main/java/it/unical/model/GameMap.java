@@ -229,7 +229,6 @@ public class GameMap {
                 // Conquista
                 if(defender.isAI()) defender.setSystemsLost(destination);
 
-                if(attacker.isAI()) attacker.setSystemsGained(destination);
 
                 defender.removeSystem(destination);
                 if(destination.isAutomated()) {
