@@ -28,6 +28,7 @@ public class GameState {
             }
             if (!p.isAI() && p.getOwnedSystems().isEmpty() && p.getFleets().isEmpty()) {
                 gameOver = true;
+                return;
             }
         }
         if (active.size() == 1) {
