@@ -284,6 +284,13 @@ cooperative_ships(From, To, Ships) :-
     Ships = MyShare + MyIncoming,
     Ships <= (TotalShips * 2) / 3.  % Non più del 66% delle mie navi
 
+
+:- chosen_strategy(reinforce),
+    reinforce_ships(F1,T,S1),
+    reinforce_ships(F2,T,S2),
+    send_reinforce_fleet(F1,T,S1),
+    S1<S2.
+
 % ===== AZIONI FINALI CORRETTE =====
 {send_expansion_fleet(From, To, Ships): expansion_ships(From, To, Ships)} = 1 :-
     chosen_strategy(expansion).

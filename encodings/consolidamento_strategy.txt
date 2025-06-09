@@ -86,11 +86,11 @@ potential_consolidation(From, To, Ships) :- can_consolidate(From, To, Ships).
 max_actions(3) :- difficulty(medium).
 max_actions(5) :- difficulty(hard).
 
-{consolidation_action(From, To, Ships) : potential_consolidation(From, To, Ships)} :- max_actions(_).
+% al massimo Max azioni di consolidamento
+{ consolidation_action(From,To,Ships) : potential_consolidation(From,To,Ships) } <= Max :-max_actions(Max).
 
 :- consolidation_action(From, To1, _), consolidation_action(From, To2, _), To1 != To2.
 :- consolidation_action(From1, To, _), consolidation_action(From2, To, _), From1 != From2.
-:- #count{From, To : consolidation_action(From, To, _)} > Max, max_actions(Max).
 
 
 % ===== PREVENZIONE CONFLITTI =====
@@ -104,18 +104,38 @@ max_actions(5) :- difficulty(hard).
 :- consolidation_action(_, To, _), not my_system(To).
 
 % ===== WEAK CONSTRAINTS PER OTTIMIZZAZIONE =====
-% Premia consolidamenti con più navi
-:~ consolidation_action(From, To, Ships). [-Ships@1]
 
-% Premia sistemi con tante navi disponibili
-:~ consolidation_action(From, _, _), available_for_consolidation(From, Available). [-Available@2]
+% ———————————————————————————————
+% 1) Massimizzare il numero di consolidation action
+% ogni potenziale non scelto costa 1 punto, PRIORITÀ 4 (più alto)
+:~ potential_consolidation(From,To,Ships), not consolidation_action(From,To,Ships). [1@4,From]
 
-% Penalizza consolidamento verso sistemi a basso rischio
-:~ consolidation_action(_, To, _), border_system(To), border_threat_level(To, low). [30@2]
-:~ consolidation_action(_, To, _), border_system(To), border_threat_level(To, medium). [10@2]
 
-% Premia invii verso sistemi deboli (poche navi)
-:~ consolidation_action(_, To, _), border_system(To), ships(To, Ships), Ships < 50. [50 - Ships@3]
+% ———————————————————————————————
+% 2) Premia consolidamenti con più navi
+% peso inverso: azioni con poche navi costano di più, PRIORITÀ 3
+% (sostituisci  max_ships  con un upper-bound sui Ships se necessario)
+weight(From, To, W) :- consolidation_action(From, To, Ships), max_ships(M), W = M - Ships + 1.
+:~ weight(From, To, W). [W@3, From, To]
+
+
+% ———————————————————————————————
+% 3) Premia sistemi con tante navi disponibili
+% azioni che partono da fonti con poche navi costano di più, PRIORITÀ 2
+max_available(A) :- A = #max{ Av : available_for_consolidation(_,Av) }.
+:~ consolidation_action(From,_,_), available_for_consolidation(From,Av), max_available(A), W = (A - Av) + 1. [W@2]
+
+% ———————————————————————————————
+% 4) Penalizza consolidamento verso sistemi a basso/medio rischio
+% PRIORITÀ 1 (più basso)
+:~ consolidation_action(_,To,_), border_system(To), border_threat_level(To, low).    [30@1]
+:~ consolidation_action(_,To,_), border_system(To), border_threat_level(To, medium). [10@1]
+
+% ———————————————————————————————
+% 5) Premia invii verso sistemi deboli (poche navi)
+% PRIORITÀ 1 (stessa del rischio, o spostala a @0 se vuoi ancora più basso)
+:~ consolidation_action(_,To,_), border_system(To), ships(To,S), W = 50 - S. [W@1]
+
 
 consolidation_fleet(From, To, Ships) :- consolidation_action(From, To, Ships).
 
