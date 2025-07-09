@@ -8,10 +8,9 @@ import com.formdev.flatlaf.FlatDarkLaf;
 
 public class MainMenuFrame extends JFrame {
     private float opacity = 0f;
-    private JLabel title;
+    private final JLabel title;
 
     public MainMenuFrame() {
-        // Set modern Look and Feel
         FlatDarkLaf.install();
 
         setTitle("Little Stars for Little Wars");
@@ -21,7 +20,6 @@ public class MainMenuFrame extends JFrame {
         setUndecorated(true);
         setOpacity(0f);
 
-        // Background panel with gradient
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -54,20 +52,16 @@ public class MainMenuFrame extends JFrame {
         panel.add(playButton);
         panel.add(Box.createVerticalGlue());
 
-        // PULSANTE TUTORIAL
         JButton tutorialButton = new JButton("Tutorial");
         tutorialButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         tutorialButton.setPreferredSize(new Dimension(150, 30));
-        tutorialButton.addActionListener(e -> {
-            new TutorialDialog(this).setVisible(true);
-        });
+        tutorialButton.addActionListener(e -> new TutorialDialog(this).setVisible(true));
 
         panel.add(Box.createVerticalStrut(15));
         panel.add(tutorialButton);
         panel.add(Box.createVerticalGlue());
 
 
-        // PULSANTE ESCI
         JButton exitButton = new JButton("Esci");
         exitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         exitButton.setPreferredSize(new Dimension(150, 30));
@@ -77,7 +71,6 @@ public class MainMenuFrame extends JFrame {
         panel.add(exitButton);
         panel.add(Box.createVerticalGlue());
 
-        // Aggiungi sezione crediti
         addCredits(panel);
 
         add(panel);
@@ -118,58 +111,7 @@ public class MainMenuFrame extends JFrame {
         timer.setInitialDelay(500);
         timer.start();
     }
-
-    // Custom button with hover scaling
-    private static class AnimatedButton extends JButton {
-        private float scale = 1f;
-        public AnimatedButton(String text) {
-            super(text);
-            setFont(getFont().deriveFont(Font.BOLD, 18f));
-            setFocusPainted(false);
-            setBackground(new Color(70, 70, 120));
-            setForeground(Color.WHITE);
-            setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    animateScale(1.1f);
-                }
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    animateScale(1f);
-                }
-            });
-        }
-
-        private void animateScale(float target) {
-            Timer timer = new Timer(15, null);
-            timer.addActionListener(e -> {
-                scale += (target - scale) * 0.2f;
-                if (Math.abs(scale - target) < 0.01f) {
-                    scale = target;
-                    ((Timer)e.getSource()).stop();
-                }
-                repaint();
-            });
-            timer.start();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2d = (Graphics2D) g.create();
-            int w = getWidth();
-            int h = getHeight();
-            int sw = (int)(w * scale);
-            int sh = (int)(h * scale);
-            int x = (w - sw) / 2;
-            int y = (h - sh) / 2;
-            g2d.translate(x, y);
-            g2d.scale(scale, scale);
-            super.paintComponent(g2d);
-            g2d.dispose();
-        }
-    }
+    
 
     private void addCredits(JPanel panel) {
         JPanel creditsPanel = new JPanel();

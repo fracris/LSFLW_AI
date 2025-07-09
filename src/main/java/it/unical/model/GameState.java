@@ -7,8 +7,8 @@ import java.awt.Dimension;
 
 
 public class GameState {
-    private GameMap gameMap;
-    private List<Player> players;
+    private final GameMap gameMap;
+    private final List<Player> players;
     private boolean gameOver;
     private Player winner;
     private static int count=0;
@@ -36,12 +36,10 @@ public class GameState {
             winner   = active.get(0);
         }
     }
-    // Inizializza una nuova partita
+
     public void initGame(Difficulty difficulty, int numSystem, boolean withAI) {
-        // Genera la mappa
         gameMap.generateMap(numSystem, difficulty);
         Color[] playerColors;
-        // Crea i giocatori
         players.clear();
         int numPlayers;
 
@@ -59,15 +57,13 @@ public class GameState {
         }
 
         for (int i = 0; i < numPlayers; i++) {
-            boolean isAI = (i > 0 && withAI); // Solo il primo giocatore è umano se withAI è true
+            boolean isAI = (i > 0 && withAI);
             Player player = new Player(i, "Giocatore " + (i + 1), playerColors[i], isAI);
             players.add(player);
         }
 
-        // Assegna sistemi iniziali
         assignInitialSystems(difficulty);
 
-        // Reset stato di vittoria
         gameOver = false;
         winner = null;
     }
@@ -79,7 +75,7 @@ public class GameState {
         }
         return null;
     }
-    // Assegna i sistemi iniziali ai giocatori
+
     private void assignInitialSystems(Difficulty difficulty) {
         List<StarSystem> systems = gameMap.getSystems();
         int numPlayers = players.size();
@@ -98,7 +94,6 @@ public class GameState {
         }
     }
 
-    /** Restituisce tutti i giocatori IA */
     public List<Player> getAiPlayers() {
         List<Player> ais = new ArrayList<>();
         for (Player p : players) {
@@ -107,16 +102,13 @@ public class GameState {
         return ais;
     }
 
-    /** Chiamalo ad ogni tick per produrre navi e controllare game over */
     public void updateGameState() {
-        // Produzione di tutte le navi
         if(count%10==0) {
             for (StarSystem sys : gameMap.getSystems()) {
                 sys.produceShips();
             }
         }
 
-        // Controlla se c'è un vincitore
         checkGameOver();
         count++;
     }
@@ -135,7 +127,6 @@ public class GameState {
         return null;
     }
 
-    // --- getters ---
     public GameMap getGameMap()    { return gameMap; }
     public List<Player> getPlayers(){ return players; }
     public boolean isGameOver()    { return gameOver; }

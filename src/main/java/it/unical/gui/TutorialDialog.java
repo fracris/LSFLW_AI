@@ -13,7 +13,6 @@ public class TutorialDialog extends JDialog {
         setLocationRelativeTo(owner);
         setUndecorated(true);
 
-        // Main container with gradient background
         JPanel container = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -28,14 +27,12 @@ public class TutorialDialog extends JDialog {
         };
         container.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Title bar
         JLabel header = new JLabel("Tutorial di Gioco");
         header.setFont(header.getFont().deriveFont(Font.BOLD, 24f));
         header.setForeground(new Color(220, 220, 255));
         header.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         header.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Content panel with sections
         JPanel content = new JPanel();
         content.setOpaque(false);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -61,7 +58,6 @@ public class TutorialDialog extends JDialog {
                 "Seleziona dal pannello di controllo."
         }));
 
-        // Wrap content in scroll pane for overflow but hide scrollbar
         JScrollPane scroll = new JScrollPane(content);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
@@ -69,14 +65,12 @@ public class TutorialDialog extends JDialog {
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Footer hint
         JLabel footer = new JLabel("Premi 'P' o ESC per chiudere");
         footer.setFont(footer.getFont().deriveFont(Font.ITALIC, 12f));
         footer.setForeground(new Color(180, 180, 220));
         footer.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         footer.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Assemble container
         Box vbox = Box.createVerticalBox();
         vbox.add(header);
         vbox.add(scroll);
@@ -84,7 +78,6 @@ public class TutorialDialog extends JDialog {
         vbox.add(footer);
         container.add(vbox, BorderLayout.CENTER);
 
-        // Key bindings
         InputMap im = container.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap am = container.getActionMap();
         im.put(KeyStroke.getKeyStroke('P'), "close");

@@ -14,20 +14,10 @@ public class PreviousGameMetrics {
     private int neutralSystemCount;
     private int myShipsTotal;
     private int enemyShipsTotal;
-    private Map<Integer,Integer> specificEnemySystemCount = new HashMap<>();
-    private Map<Integer,Integer> specificEnemyShipsTotal = new HashMap<>();
+    private final Map<Integer,Integer> specificEnemySystemCount = new HashMap<>();
+    private final Map<Integer,Integer> specificEnemyShipsTotal = new HashMap<>();
 
-    // Costruttore con valori predefiniti
-    public PreviousGameMetrics() {
-        // Valori predefiniti come nel metodo getDefaultPreviousMetrics()
-        this.mySystemCount = 1;
-        this.enemySystemCount = 1;
-        this.neutralSystemCount = 8;
-        this.myShipsTotal = 110;
-        this.enemyShipsTotal = 110;
-    }
 
-    // Costruttore completo
     public PreviousGameMetrics(int mySystemCount, int enemySystemCount, int neutralSystemCount,
                                int myShipsTotal, int enemyShipsTotal, Map<Integer,int[]> specificMetrics) {
         this.mySystemCount = mySystemCount;
@@ -43,10 +33,7 @@ public class PreviousGameMetrics {
         }
     }
 
-    // Getter e setter
-    public int getMySystemCount() {
-        return mySystemCount;
-    }
+
 
     public void setMySystemCount(int mySystemCount) {
         this.mySystemCount = mySystemCount;
@@ -84,7 +71,6 @@ public class PreviousGameMetrics {
         this.enemyShipsTotal = enemyShipsTotal;
     }
 
-    // Metodo per convertire i dati in formato ASP
     public String toAspFacts() {
         StringBuilder facts = new StringBuilder();
         facts.append("previous_my_ships_total(").append(myShipsTotal).append(").\n");
@@ -95,7 +81,6 @@ public class PreviousGameMetrics {
         return facts.toString();
     }
 
-    // Metodo per aggiornare le metriche dal game state attuale
     public void updateFromGameState(GameState gameState, Player player) {
         int mySystemCount = 0;
         int enemySystemCount = 0;
@@ -115,7 +100,6 @@ public class PreviousGameMetrics {
             }
         }
 
-        // Aggiungi anche le navi nelle flotte
         for (Fleet fleet : gameState.getGameMap().getFleets()) {
             if (fleet.getOwner().getId() == player.getId()) {
                 myShipsTotal += fleet.getShips();

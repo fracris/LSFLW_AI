@@ -6,8 +6,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import it.unical.mat.embasp.base.Handler;
@@ -20,34 +18,24 @@ import it.unical.mat.embasp.specializations.dlv2.desktop.DLV2DesktopService;
 import it.unical.model.*;
 
 public class AIPlayer {
-    private Difficulty difficulty;
+    private final Difficulty difficulty;
     private Player player;
-    private GameState gameState;
+    private final GameState gameState;
     private String aspStrategy;
-    private String consolidamento_strategy = "encodings/consolidamento_strategy.txt";
 
     private boolean isInitialized;
-    private final String logDirectory = "logs/asp_facts/";
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-    private PreviousGameMetrics previousMetrics;
+    private final PreviousGameMetrics previousMetrics;
 
-    // Executor per le operazioni asincrone
     private final ExecutorService dlvExecutor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "DLV-" + (player != null ? player.getId() : "unknown"));
         t.setDaemon(true);
         return t;
     });
 
-    // Timeout per le operazioni DLV (ridotto per evitare accumulo di processi)
     private static final int DLV_TIMEOUT_SECONDS = 3;
 
-    // Flag atomico per evitare esecuzioni multiple simultanee
     private final AtomicBoolean isExecuting = new AtomicBoolean(false);
 
-    // **NUOVO**: Lista per tracciare i processi DLV attivi
-    private final Set<Process> activeDLVProcesses = Collections.synchronizedSet(new HashSet<>());
-
-    // **NUOVO**: Lista per tracciare gli handler attivi
     private final Set<Handler> activeHandlers = Collections.synchronizedSet(new HashSet<>());
 
     public AIPlayer(Player player, GameState gameState, Difficulty difficulty) {
@@ -55,7 +43,6 @@ public class AIPlayer {
         this.gameState = gameState;
         this.difficulty = difficulty;
 
-        // ... resto dell'inizializzazione uguale ...
         int enemySystemCount = gameState.getAiPlayers().size();
         int neutralSystemCount = gameState.getGameMap().getSystems().size() - gameState.getPlayers().size();
         int myShipsTotal = player.getTotalShips();
@@ -93,7 +80,6 @@ public class AIPlayer {
 
         this.isInitialized = true;
 
-        // **NUOVO**: Aggiungi shutdown hook per pulizia
         Runtime.getRuntime().addShutdownHook(new Thread(this::forceCleanupDLVProcesses));
     }
 
@@ -139,7 +125,6 @@ public class AIPlayer {
         activeHandlers.add(handler);
 
         ExecutorService tempExecutor = Executors.newSingleThreadExecutor();
-        Process dlvProcess = null;
 
         try {
             Future<Output> task = tempExecutor.submit(() -> {
@@ -152,7 +137,6 @@ public class AIPlayer {
 
             Output result = task.get(DLV_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            // **NUOVO**: Cleanup esplicito dopo successo
             cleanupHandler(handler);
 
             return result;
@@ -160,7 +144,6 @@ public class AIPlayer {
         } catch (TimeoutException e) {
             System.err.println("DLV timeout (" + DLV_TIMEOUT_SECONDS + "s) per " + player.getName());
 
-            // **NUOVO**: Cleanup forzato in caso di timeout
             forceKillDLVProcesses();
             cleanupHandler(handler);
 
@@ -188,9 +171,7 @@ public class AIPlayer {
     private void cleanupHandler(Handler handler) {
         try {
             if (handler instanceof DesktopHandler) {
-                // Cerca di accedere al processo interno per terminarlo
-                // Questo è un workaround poiché EMBASP potrebbe non esporre il processo
-                System.gc(); // Suggerisci garbage collection
+                System.gc();
             }
         } catch (Exception e) {
             System.err.println("Errore durante cleanup handler: " + e.getMessage());
@@ -203,7 +184,6 @@ public class AIPlayer {
     private void forceKillDLVProcesses() {
         try {
             if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-                // Windows: termina tutti i processi dlv.exe
                 ProcessBuilder pb = new ProcessBuilder("taskkill", "/F", "/IM", "dlv.exe");
                 Process killProcess = pb.start();
                 boolean finished = killProcess.waitFor(2, TimeUnit.SECONDS);
@@ -212,7 +192,6 @@ public class AIPlayer {
                 }
                 System.out.println("Terminati processi DLV per " + player.getName());
             } else {
-                // Linux/Mac: termina processi dlv
                 ProcessBuilder pb = new ProcessBuilder("pkill", "-f", "dlv");
                 Process killProcess = pb.start();
                 boolean finished = killProcess.waitFor(2, TimeUnit.SECONDS);
@@ -232,7 +211,6 @@ public class AIPlayer {
     private void forceCleanupDLVProcesses() {
         System.out.println("Cleanup forzato DLV per " + player.getName());
 
-        // Termina tutti gli handler attivi
         synchronized (activeHandlers) {
             for (Handler handler : new HashSet<>(activeHandlers)) {
                 try {
@@ -244,7 +222,6 @@ public class AIPlayer {
             activeHandlers.clear();
         }
 
-        // Termina processi DLV rimasti
         forceKillDLVProcesses();
     }
 
@@ -283,7 +260,6 @@ public class AIPlayer {
                 System.out.println("Nessun answer set valido trovato per " + player.getName());
             }
         } finally {
-            // **NUOVO**: Cleanup esplicito
             if (handler != null) {
                 cleanupHandler(handler);
             }
@@ -295,7 +271,6 @@ public class AIPlayer {
         Handler handler2 = null;
 
         try {
-            // FASE 1
             String aspFacts = convertGameStateToASP(true);
 
             System.out.println(aspFacts);
@@ -342,7 +317,6 @@ public class AIPlayer {
                 executeActionsFromStrings(actions1);
             }
 
-            // FASE 2
             StringBuilder aspFacts2 = parseFactsSets(outputPhase1.getOutput());
             for (String sendfleet : actions1) {
                 aspFacts2.append(sendfleet).append(".\n");
@@ -355,6 +329,7 @@ public class AIPlayer {
             handler2.addOption(option2);
 
             InputProgram executionProgram = new ASPInputProgram();
+            String consolidamento_strategy = "encodings/consolidamento_strategy.txt";
             executionProgram.addFilesPath(consolidamento_strategy);
             handler2.addProgram(executionProgram);
 
@@ -380,7 +355,6 @@ public class AIPlayer {
                 executeActionsFromStrings(actions2);
             }
         } finally {
-            // **NUOVO**: Cleanup di entrambi gli handler
             if (handler1 != null) {
                 cleanupHandler(handler1);
             }
@@ -396,7 +370,6 @@ public class AIPlayer {
     public void shutdown() {
         System.out.println("Shutdown AIPlayer per " + player.getName());
 
-        // **NUOVO**: Cleanup completo prima dello shutdown
         forceCleanupDLVProcesses();
 
         dlvExecutor.shutdownNow();

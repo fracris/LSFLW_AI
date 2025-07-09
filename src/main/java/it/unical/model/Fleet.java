@@ -3,13 +3,13 @@ package it.unical.model;
 import java.awt.*;
 
 public class Fleet {
-    private int id;
-    private Player owner;
+    private final int id;
+    private final Player owner;
     private int ships;
-    private StarSystem source;
-    private StarSystem destination;
-    private double progress; // 0.0 a 1.0, dove 1.0 indica l'arrivo
-    private double speed;
+    private final StarSystem source;
+    private final StarSystem destination;
+    private double progress;
+    private final double speed;
 
     public Fleet(int id, Player owner, int ships, StarSystem source, StarSystem destination, double speed) {
         this.id = id;
@@ -25,7 +25,6 @@ public class Fleet {
         this.ships = ships;
     }
 
-    // Metodo per aggiornare la posizione della flotta
     public void update(double deltaTime) {
         progress += speed * deltaTime;
         if (progress >= 1.0) {
@@ -33,12 +32,10 @@ public class Fleet {
         }
     }
 
-    // Metodo per verificare se la flotta è arrivata
     public boolean hasArrived() {
         return progress >= 1.0;
     }
 
-    // Calcola la posizione attuale della flotta (interpolazione)
     public Point getCurrentPosition() {
         int x1 = source.getPosition().x;
         int y1 = source.getPosition().y;
@@ -51,7 +48,6 @@ public class Fleet {
         return new Point(x, y);
     }
 
-    // Getters e setters
     public int getId() { return id; }
     public Player getOwner() { return owner; }
     public Color getColor() { return owner.getColor(); }

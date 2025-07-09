@@ -5,13 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StarSystem {
-    private int id;
-    private String name;
+    private final int id;
+    private final String name;
     private final Point position;
     private int ships;
     private Player owner;
-    private int productionRate;
-    private List<StarSystem> connectedSystems;
+    private final int productionRate;
+    private final List<StarSystem> connectedSystems;
     private boolean automated=false;
     private StarSystem automatedTo=null;
     private int sendMode=100;
@@ -77,7 +77,6 @@ public class StarSystem {
         this.owner = newOwner;
     }
 
-    // Getters e setters
     public int getId() { return id; }
     public String getName() { return name; }
     public Point getPosition() { return position; }

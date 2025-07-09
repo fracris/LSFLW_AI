@@ -20,7 +20,6 @@ public abstract sealed class Difficulty
         @Override public String toString() { return "Hard"; }
     }
 
-    // Factory methods per comodità
     public static Difficulty easy()   { return new Easy(); }
     public static Difficulty medium() { return new Medium(); }
     public static Difficulty hard()   { return new Hard(); }

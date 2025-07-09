@@ -6,11 +6,10 @@ import it.unical.utils.ResourceLoader;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 
 public class StarSystemView {
-    private StarSystem system;
+    private final StarSystem system;
     private static final int SYSTEM_RADIUS = 30;
     private static final Font SYSTEM_FONT = new Font("Arial", Font.BOLD, 12);
     private static final Font SHIPS_FONT = new Font("Arial", Font.BOLD, 10);
@@ -26,17 +25,6 @@ public class StarSystemView {
     private static final Image ai3StarImage;
     private static final ImageObserver ai3StarObserver;
 
-    // Aggiungi questi campi alla classe StarSystem
-    private int sendMode = 100; // Default: 100%
-
-    // Aggiungi questo metodo getter e setter alla classe StarSystem
-    public int getSendMode() {
-        return sendMode;
-    }
-
-    public void setSendMode(int sendMode) {
-        this.sendMode = sendMode;
-    }
 
 
     static {
@@ -71,7 +59,6 @@ public class StarSystemView {
         Image starImage;
         ImageObserver starObserver;
 
-        // Select image based on system owner
         if (system.getOwner() == null) {
             starImage = neutralStarImage;
             starObserver = neutralStarObserver;
@@ -93,7 +80,6 @@ public class StarSystemView {
             starObserver = playerStarObserver;
         }
 
-        // Draw the star system image
         g2d.drawImage(starImage, position.x - SYSTEM_RADIUS, position.y - SYSTEM_RADIUS,
                 SYSTEM_RADIUS * 2, SYSTEM_RADIUS * 2, starObserver);
         
@@ -105,24 +91,20 @@ public class StarSystemView {
             AffineTransform oldTransform = g2d.getTransform();
             g2d.translate(position.x, position.y);
             g2d.rotate(angle);
-            // Triangolo con punta verso destra
             int tri = 15;
             int[] xP = { SYSTEM_RADIUS + tri - 15, SYSTEM_RADIUS - 15, SYSTEM_RADIUS - 15};
             int[] yP = { 0, -tri/2, tri/2};
             g2d.setColor(Color.BLUE);
             g2d.fillPolygon(xP, yP, 3);
 
-            // Restore the transformation
             g2d.setTransform(oldTransform);
         }
 
-        // Draw the name of the system
         g2d.setFont(SYSTEM_FONT);
         int nameWidth = g2d.getFontMetrics().stringWidth(system.getName());
         g2d.setColor(system.getOwner()==null ? Color.WHITE : system.getOwner().getColor());
         g2d.drawString(system.getName(), position.x - nameWidth / 2, position.y - SYSTEM_RADIUS + 10);
 
-        // Draw the number of ships
         if (system.getOwner() != null) {
             g2d.setFont(SHIPS_FONT);
             String shipsText = String.valueOf(system.getShips());
@@ -131,7 +113,6 @@ public class StarSystemView {
             g2d.drawString(shipsText, position.x - shipsWidth / 2, position.y + 5);
         }
 
-        // Draw the production rate
         g2d.setFont(SYSTEM_FONT);
         String prodText = "+" + system.getProductionRate();
         int prodWidth = g2d.getFontMetrics().stringWidth(prodText);
@@ -139,14 +120,12 @@ public class StarSystemView {
         g2d.drawString(prodText, position.x - prodWidth / 2, position.y + SYSTEM_RADIUS);
     }
 
-    // Controlla se il punto dato è all'interno del sistema
     public boolean contains(Point point) {
         Point position = system.getPosition();
         double distance = position.distance(point);
         return distance <= SYSTEM_RADIUS;
     }
 
-    // Getter
     public StarSystem getSystem() {
         return system;
     }

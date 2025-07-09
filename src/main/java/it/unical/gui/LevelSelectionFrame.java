@@ -41,7 +41,6 @@ public class LevelSelectionFrame extends JFrame {
         panel.add(title);
         panel.add(Box.createVerticalStrut(40));
 
-// Aggiunta dei pannelli per ogni livello
         panel.add(createLevelPanel("Facile", Difficulty.easy(), new String[]{
                 "• Una sola strategia di gioco disponibile",
                 "• Nessun consolidamento delle truppe",

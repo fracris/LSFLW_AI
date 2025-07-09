@@ -17,20 +17,19 @@ import javax.swing.*;
 
 public class GameController {
 
-    private GameState gameState;
+    private final GameState gameState;
     private GameFrame gameFrame;
-    private InputController inputController;
-    private Timer gameTimer;
-    private Map<Player, AIPlayer> aiPlayers;
+    private final InputController inputController;
+    private final Timer gameTimer;
+    private final Map<Player, AIPlayer> aiPlayers;
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
     private int playerTurn = 0; // Indice per il turno round-robin degli AI
     private int sendPerc = 100;
-    private Difficulty difficulty;
+    private final Difficulty difficulty;
     private volatile boolean paused = false;
     private volatile boolean gameRunning = true;
 
-    // Executor per operazioni asincrone del GameController
     private final ExecutorService controllerExecutor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "GameController-Worker");
         t.setDaemon(true);
@@ -79,7 +78,6 @@ public class GameController {
         pauseDialog.setContentPane(content);
         pauseDialog.pack();
 
-        // Calcolo posizione: orizzontalmente centrato, 20px sotto la barra del frame
         Point frameLoc = gameFrame.getLocationOnScreen();
         int frameX = frameLoc.x;
         int frameY = frameLoc.y;
@@ -87,10 +85,9 @@ public class GameController {
 
         int dialogW = pauseDialog.getWidth();
         int x = frameX + (frameW - dialogW) / 2;
-        int y = frameY + 60; // 20px di margine dal top
+        int y = frameY + 60;
         pauseDialog.setLocation(x, y);
 
-        // Key bindings
         JRootPane root = pauseDialog.getRootPane();
         InputMap im = root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap am = root.getActionMap();
@@ -114,7 +111,6 @@ public class GameController {
             }
         });
 
-        // Mostro il dialog; questo blocca finché non viene dispose()
         pauseDialog.setVisible(true);
     }
 
@@ -200,7 +196,6 @@ public class GameController {
 
         gameState.initGame(difficulty, numSystem, withAI);
 
-        // Crea gli AIPlayer per ogni giocatore IA in modo asincrono
         List<Player> aiPlayersList = gameState.getAiPlayers();
         List<Future<Void>> initTasks = new ArrayList<>();
 
@@ -224,7 +219,6 @@ public class GameController {
             initTasks.add(task);
         }
 
-        // Attendi che tutti gli AIPlayer siano inizializzati
         for (Future<Void> task : initTasks) {
             try {
                 task.get(5, TimeUnit.SECONDS);
@@ -246,7 +240,6 @@ public class GameController {
                 gameTimer.start();
                 System.out.println("Timer del gioco avviato");
 
-                // Calcola e stampa la frequenza AI
                 int aiTurnInterval = getAITurnInterval();
                 int frequencyMs = aiTurnInterval * UPDATE_RATE;
                 System.out.println("AI turni ogni " + aiTurnInterval + " ticks (" + frequencyMs + "ms) per " +
@@ -267,7 +260,6 @@ public class GameController {
 
         tickCounter++;
 
-        // Aggiorna lo stato del gioco
         try {
             gameState.updateGameState();
             gameState.getGameMap().updateFleets(0.3);
@@ -275,8 +267,6 @@ public class GameController {
             System.err.println("Errore durante l'aggiornamento dello stato del gioco: " + e.getMessage());
         }
 
-        // **GESTIONE AI CON ROUND-ROBIN E TIMING CORRETTO**
-        // Solo se ci sono giocatori AI
         if (!aiPlayers.isEmpty()) {
             int aiTurnInterval = getAITurnInterval();
 
@@ -285,7 +275,6 @@ public class GameController {
             }
         }
 
-        // Aggiorna l'interfaccia grafica su EDT
         if (gameFrame != null) {
             SwingUtilities.invokeLater(() -> {
                 try {
@@ -302,20 +291,16 @@ public class GameController {
         checkGameOver();
     }
 
-    /**
-     * Gestisce il turno di un singolo AI player in modo round-robin
-     */
+
     private void handleAIPlayerTurn() {
         List<Player> aiPlayersList = gameState.getAiPlayers();
 
         if (aiPlayersList.isEmpty()) return;
 
-        // Calcola quale AI deve giocare questo turno (round-robin)
         Player currentAIPlayer = aiPlayersList.get(playerTurn);
         AIPlayer aiPlayerInstance = aiPlayers.get(currentAIPlayer);
 
         if (aiPlayerInstance != null && (!currentAIPlayer.getOwnedSystems().isEmpty() || currentAIPlayer.getTotalShips()!=0)) {
-            // Esegui il turno in modo asincrono
             controllerExecutor.submit(() -> {
                 try {
                     if (!aiPlayerInstance.isExecuting()) {
@@ -334,28 +319,15 @@ public class GameController {
             });
         }
 
-        // Passa al prossimo AI player (round-robin)
         playerTurn = (playerTurn + 1) % aiPlayersList.size();
     }
 
 
-    // ==================== GETTERS E SETTERS ====================
-
-    public boolean isGameRunning() {
-        return gameRunning;
-    }
-
-    public boolean isPaused() {
-        return paused;
-    }
 
     public GameState getGameState() {
         return gameState;
     }
 
-    public void setGameState(GameState gameState) {
-        this.gameState = gameState;
-    }
 
     public GameFrame getGameFrame() {
         return gameFrame;
@@ -372,31 +344,7 @@ public class GameController {
         return inputController;
     }
 
-    public Difficulty getDifficulty() {
-        return difficulty;
-    }
 
-    public void setDifficulty(Difficulty difficulty) {
-        this.difficulty = difficulty;
-    }
-
-    public Map<Player, AIPlayer> getAiPlayers() {
-        synchronized (aiPlayers) {
-            return new HashMap<>(aiPlayers);
-        }
-    }
-
-    public Timer getGameTimer() {
-        return gameTimer;
-    }
-
-    public int getTickCounter() {
-        return tickCounter;
-    }
-
-    public int getUpdateRate() {
-        return UPDATE_RATE;
-    }
 
     public int getSendPerc() {
         return sendPerc;
@@ -406,7 +354,6 @@ public class GameController {
         this.sendPerc = sendPerc;
     }
 
-    // Nel GameController, aggiungi questo metodo al shutdown:
 
     private void forceKillAllDLVProcesses() {
         try {
@@ -429,16 +376,13 @@ public class GameController {
 
 
 
-    // Aggiungi un flag per controllare se il controller è in fase di shutdown
     private volatile boolean isShuttingDown = false;
 
-    // Modifica il metodo sendFleet per controllare lo stato prima di sottomettere task
     public void sendFleet(StarSystem source, StarSystem target, int ships) {
 
         if (!canSubmitTasks()) {
-            return; // Silenzioso se in shutdown
+            return;
         }
-        // Controlla se siamo in shutdown prima di sottomettere il task
         if (isShuttingDown || controllerExecutor.isShutdown()) {
             System.out.println("Tentativo di inviare flotta ignorato: GameController in shutdown");
             return;
@@ -447,7 +391,6 @@ public class GameController {
         try {
             controllerExecutor.submit(() -> {
                 try {
-                    // Doppio controllo all'interno del task
                     if (isShuttingDown || !gameRunning) {
                         return;
                     }
@@ -471,17 +414,15 @@ public class GameController {
         }
     }
 
-    // Modifica checkGameOver per essere più robusto
     private void checkGameOver() {
         if (gameState.isGameOver() && !isShuttingDown) {
-            // Controlla se siamo già in shutdown per evitare chiamate multiple
             if (isShuttingDown || controllerExecutor.isShutdown()) {
                 return;
             }
 
             try {
                 controllerExecutor.submit(() -> {
-                    if (isShuttingDown) return; // Doppio controllo
+                    if (isShuttingDown) return;
 
                     stopGame();
 
@@ -511,7 +452,6 @@ public class GameController {
                 });
             } catch (RejectedExecutionException e) {
                 System.out.println("Task GameOver rifiutato: già in shutdown");
-                // Esegui direttamente su EDT come fallback
                 SwingUtilities.invokeLater(() -> {
                     if (gameFrame != null) {
                         gameFrame.dispose();
@@ -522,10 +462,9 @@ public class GameController {
         }
     }
 
-    // Modifica backToMainMenu per essere più robusto
     public void backToMainMenu() {
         if (isShuttingDown) {
-            return; // Evita chiamate multiple
+            return;
         }
 
         try {
@@ -549,7 +488,6 @@ public class GameController {
             });
         } catch (RejectedExecutionException e) {
             System.out.println("Task backToMainMenu rifiutato: già in shutdown");
-            // Esegui direttamente come fallback
             SwingUtilities.invokeLater(() -> {
                 if (gameFrame != null) {
                     gameFrame.dispose();
@@ -561,44 +499,36 @@ public class GameController {
 
 
 
-    // Modifica stopGame con shutdown più ordinato
     private void stopGame() {
-        // Imposta il flag di shutdown per prima cosa
         isShuttingDown = true;
         gameRunning = false;
 
         System.out.println("Iniziando shutdown del GameController...");
 
-        // Ferma il timer
         if (gameTimer != null && gameTimer.isRunning()) {
             gameTimer.stop();
             System.out.println("Timer del gioco fermato");
         }
 
-        // Chiudi gli AI players
         shutdownAIPlayers();
 
-        // Cleanup globale DLV
         forceKillAllDLVProcesses();
 
-        // Chiudi l'executor con timeout
         shutdownExecutors();
 
         System.out.println("Gioco fermato completamente");
     }
 
-    // Modifica shutdownExecutors per essere più ordinato
     private void shutdownExecutors() {
         System.out.println("Chiudendo executor del GameController...");
 
-        controllerExecutor.shutdown(); // Impedisce nuovi task
+        controllerExecutor.shutdown();
 
-        controllerExecutor.shutdownNow(); // Forza l'interruzione
+        controllerExecutor.shutdownNow();
 
         System.out.println("Executor del GameController chiuso");
     }
 
-    // Aggiungi un metodo per controllare se è safe sottomettere task
     public boolean canSubmitTasks() {
         return !isShuttingDown && !controllerExecutor.isShutdown() && gameRunning;
     }
