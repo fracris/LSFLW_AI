@@ -11,154 +11,130 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class ControlPanel extends JPanel implements ActionListener {
-    private GameController gameController;
-    private JButton sendFleetButton;
-    private JSpinner shipsSpinner;
-    private JButton endTurnButton;
-    private JLabel statusLabel;
+    private final GameController gameController;
+    private final JLabel statusLabel;
+    private final JRadioButton percent25Radio;
+    private final JRadioButton percent50Radio;
+    private final JRadioButton percent75Radio;
+    private final JRadioButton percent100Radio;
 
     public ControlPanel(GameController gameController) {
         this.gameController = gameController;
 
-        // Configura il pannello
         setPreferredSize(new Dimension(0, 80));
         setBackground(new Color(40, 40, 50));
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setLayout(new BorderLayout(10, 0));
 
-        // Crea i componenti
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         actionsPanel.setOpaque(false);
 
-        sendFleetButton = new JButton("Invia Flotta");
-        sendFleetButton.setEnabled(false);
-        sendFleetButton.addActionListener(this);
+        JPanel percentPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        percentPanel.setOpaque(false);
+        JLabel percentLabel = new JLabel("Navi da inviare:");
+        percentLabel.setForeground(Color.WHITE);
+        percentPanel.add(percentLabel);
 
-        JLabel shipsLabel = new JLabel("Navi:");
-        shipsLabel.setForeground(Color.WHITE);
+        percent25Radio = new JRadioButton("25%");
+        percent50Radio = new JRadioButton("50%");
+        percent75Radio = new JRadioButton("75%");
+        percent100Radio = new JRadioButton("100%");
 
-        SpinnerNumberModel spinnerModel = new SpinnerNumberModel(10, 1, 100, 1);
-        shipsSpinner = new JSpinner(spinnerModel);
-        shipsSpinner.setPreferredSize(new Dimension(60, 25));
+        percent25Radio.setForeground(Color.WHITE);
+        percent50Radio.setForeground(Color.WHITE);
+        percent75Radio.setForeground(Color.WHITE);
+        percent100Radio.setForeground(Color.WHITE);
 
-        endTurnButton = new JButton("Fine Turno");
-        endTurnButton.addActionListener(this);
+        percent25Radio.setOpaque(false);
+        percent50Radio.setOpaque(false);
+        percent75Radio.setOpaque(false);
+        percent100Radio.setOpaque(false);
+
+        percent25Radio.addActionListener(this);
+        percent50Radio.addActionListener(this);
+        percent75Radio.addActionListener(this);
+        percent100Radio.addActionListener(this);
+
+        ButtonGroup percentButtonGroup = new ButtonGroup();
+        percentButtonGroup.add(percent25Radio);
+        percentButtonGroup.add(percent50Radio);
+        percentButtonGroup.add(percent75Radio);
+        percentButtonGroup.add(percent100Radio);
+
+        percent100Radio.setSelected(true);
+
+        percentPanel.add(percent25Radio);
+        percentPanel.add(percent50Radio);
+        percentPanel.add(percent75Radio);
+        percentPanel.add(percent100Radio);
+
+        actionsPanel.add(percentPanel);
+        actionsPanel.add(Box.createRigidArea(new Dimension(20, 0)));
 
         statusLabel = new JLabel("Seleziona un sistema da cui inviare una flotta");
         statusLabel.setForeground(Color.WHITE);
 
-        // Aggiungi i componenti al pannello delle azioni
-        actionsPanel.add(sendFleetButton);
-        actionsPanel.add(shipsLabel);
-        actionsPanel.add(shipsSpinner);
-        actionsPanel.add(Box.createRigidArea(new Dimension(20, 0)));
-        actionsPanel.add(endTurnButton);
-
-        // Aggiungi i pannelli al layout principale
         add(actionsPanel, BorderLayout.WEST);
         add(statusLabel, BorderLayout.EAST);
     }
 
-    // Aggiorna lo stato dei controlli
     public void updateControls() {
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-        boolean isHumanTurn = !currentPlayer.isAI();
-
-        // Disabilita i controlli se non è il turno del giocatore umano
-        endTurnButton.setEnabled(isHumanTurn);
-        shipsSpinner.setEnabled(isHumanTurn);
-
         StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
-        StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
-
-        // Abilita il pulsante "Invia Flotta" solo se:
-        // 1. È il turno del giocatore umano
-        // 2. È selezionato un sistema di proprietà del giocatore corrente
-        // 3. È selezionato un sistema target valido
-        boolean canSendFleet = isHumanTurn &&
-                selectedSystem != null &&
-                selectedSystem.getOwner() == currentPlayer &&
-                targetSystem != null &&
-                selectedSystem.getConnectedSystems().contains(targetSystem);
-
-        sendFleetButton.setEnabled(canSendFleet);
-
-        // Limita il numero massimo di navi che possono essere inviate
-        if (selectedSystem != null) {
-            int maxShips = selectedSystem.getShips();
-            SpinnerNumberModel model = (SpinnerNumberModel) shipsSpinner.getModel();
-            model.setMaximum(maxShips);
-
-            // Se il valore attuale è maggiore del massimo, aggiustalo
-            if ((Integer) shipsSpinner.getValue() > maxShips) {
-                shipsSpinner.setValue(maxShips);
-            }
-        }
-
-        // Aggiorna il messaggio di stato
-        updateStatusMessage();
-    }
-
-    // Aggiorna il messaggio di stato
-    private void updateStatusMessage() {
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-
-        if (currentPlayer.isAI()) {
-            statusLabel.setText("L'IA sta pensando...");
-            return;
-        }
-
-        StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
-        StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
+        StarSystem targetSystem   = gameController.getGamePanel().getTargetSystem();
+        Player   human            = gameController.getGameState().getHumanPlayer();
 
         if (selectedSystem == null) {
             statusLabel.setText("Seleziona un tuo sistema stellare");
-        } else if (selectedSystem.getOwner() != currentPlayer) {
-            statusLabel.setText("Questo non è un tuo sistema! Selezionane uno tuo");
+        } else if (selectedSystem.getOwner() != human) {
+            statusLabel.setText("Questo non è un tuo sistema!");
         } else if (targetSystem == null) {
-            statusLabel.setText("Seleziona un sistema target connesso");
+            statusLabel.setText("Seleziona un sistema target");
         } else {
-            statusLabel.setText("Pronto a inviare una flotta!");
+            statusLabel.setText("Pronto a inviare una flotta");
         }
     }
 
-    // Gestisce gli eventi dei pulsanti
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == sendFleetButton) {
-            sendFleet();
-        } else if (e.getSource() == endTurnButton) {
-            endTurn();
-        }
-    }
-
-    // Invia una flotta
-    private void sendFleet() {
+    public void sendFleet() {
         StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
         StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
-        int ships = (Integer) shipsSpinner.getValue();
 
-        if (selectedSystem != null && targetSystem != null && ships > 0) {
+        if (selectedSystem!=null && targetSystem != null && selectedSystem.getShips() > 1) {
+            int ships = calculateShipsToSend(selectedSystem);
             gameController.sendFleet(selectedSystem, targetSystem, ships);
 
-            // Reimposta la selezione
             gameController.getGamePanel().setSelectedSystem(null);
             gameController.getGamePanel().repaint();
 
-            // Aggiorna i controlli
             updateControls();
         }
     }
 
-    // Termina il turno corrente
-    private void endTurn() {
-        gameController.nextTurn();
+    private int calculateShipsToSend(StarSystem system) {
+        int totalShips = system.getShips();
+        int shipsToSend;
 
-        // Reimposta la selezione
-        gameController.getGamePanel().setSelectedSystem(null);
-        gameController.getGamePanel().repaint();
+        if (percent25Radio.isSelected()) {
+            shipsToSend = (int)(totalShips * 0.25);
+        } else if (percent50Radio.isSelected()) {
+            shipsToSend = (int)(totalShips * 0.5);
+        } else if (percent75Radio.isSelected()) {
+            shipsToSend = (int)(totalShips * 0.75);
+        } else {
+            shipsToSend = totalShips - 1;
+        }
+        return Math.max(1, Math.min(shipsToSend, totalShips - 1));
+    }
 
-        // Aggiorna i controlli
-        updateControls();
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == percent25Radio) {
+            gameController.setSendPerc(25);
+        } else if (e.getSource() == percent50Radio) {
+            gameController.setSendPerc(50);
+        } else if (e.getSource() == percent75Radio) {
+            gameController.setSendPerc(75);
+        } else if (e.getSource() == percent100Radio) {
+            gameController.setSendPerc(100);
+        }
     }
 }

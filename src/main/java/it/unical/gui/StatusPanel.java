@@ -9,43 +9,28 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class StatusPanel extends JPanel {
-    private GameController gameController;
-    private JLabel turnLabel;
-    private JLabel currentPlayerLabel;
-    private JPanel playersStatsPanel;
-    private JPanel selectedSystemPanel;
-    private JLabel selectedSystemLabel;
-    private JLabel selectedSystemShipsLabel;
-    private JLabel selectedSystemProdLabel;
+    private final GameController gameController;
+    private final JPanel playersStatsPanel;
+    private final JLabel selectedSystemLabel;
+    private final JLabel selectedSystemShipsLabel;
+    private final JLabel selectedSystemProdLabel;
 
     public StatusPanel(GameController gameController) {
         this.gameController = gameController;
 
-        // Configura il pannello
         setPreferredSize(new Dimension(200, 0));
         setBackground(new Color(30, 30, 40));
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setLayout(new BorderLayout(0, 10));
 
-        // Crea il pannello per le informazioni sul turno
         JPanel turnPanel = new JPanel(new GridLayout(2, 1, 0, 5));
         turnPanel.setOpaque(false);
-        turnLabel = new JLabel("Turno: 1");
-        turnLabel.setForeground(Color.WHITE);
-        turnLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        currentPlayerLabel = new JLabel("Giocatore: 1");
-        currentPlayerLabel.setForeground(Color.WHITE);
-        currentPlayerLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        turnPanel.add(turnLabel);
-        turnPanel.add(currentPlayerLabel);
 
-        // Crea il pannello per le statistiche dei giocatori
         playersStatsPanel = new JPanel();
         playersStatsPanel.setLayout(new BoxLayout(playersStatsPanel, BoxLayout.Y_AXIS));
         playersStatsPanel.setOpaque(false);
 
-        // Crea il pannello per le informazioni sul sistema selezionato
-        selectedSystemPanel = new JPanel();
+        JPanel selectedSystemPanel = new JPanel();
         selectedSystemPanel.setLayout(new BoxLayout(selectedSystemPanel, BoxLayout.Y_AXIS));
         selectedSystemPanel.setOpaque(false);
         selectedSystemPanel.setBorder(BorderFactory.createTitledBorder(
@@ -78,35 +63,23 @@ public class StatusPanel extends JPanel {
         selectedSystemPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         selectedSystemPanel.add(selectedSystemProdLabel);
 
-        // Aggiunge i pannelli al layout
         add(turnPanel, BorderLayout.NORTH);
         add(playersStatsPanel, BorderLayout.CENTER);
         add(selectedSystemPanel, BorderLayout.SOUTH);
 
-        // Aggiorna lo stato iniziale
         updateStatus();
     }
 
-    // Aggiorna le informazioni di stato
     public void updateStatus() {
-        // Aggiorna le informazioni sul turno
-        turnLabel.setText("Turno: " + gameController.getGameState().getCurrentTurn());
-        Player currentPlayer = gameController.getGameState().getCurrentPlayer();
-        currentPlayerLabel.setText("Giocatore: " + currentPlayer.getName());
-        currentPlayerLabel.setForeground(currentPlayer.getColor());
 
-        // Aggiorna le statistiche dei giocatori
         updatePlayerStats();
 
-        // Aggiorna le informazioni sul sistema selezionato
         updateSelectedSystemInfo();
     }
 
-    // Aggiorna le statistiche dei giocatori
     private void updatePlayerStats() {
         playersStatsPanel.removeAll();
 
-        // Titolo del pannello
         JLabel statsTitle = new JLabel("Statistiche Giocatori");
         statsTitle.setForeground(Color.WHITE);
         statsTitle.setFont(new Font("Arial", Font.BOLD, 12));
@@ -114,7 +87,6 @@ public class StatusPanel extends JPanel {
         playersStatsPanel.add(statsTitle);
         playersStatsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Aggiungi statistiche per ogni giocatore
         for (Player player : gameController.getGameState().getPlayers()) {
             JPanel playerPanel = new JPanel();
             playerPanel.setLayout(new BoxLayout(playerPanel, BoxLayout.Y_AXIS));
@@ -148,16 +120,18 @@ public class StatusPanel extends JPanel {
         playersStatsPanel.repaint();
     }
 
-    // Aggiorna le informazioni sul sistema selezionato
     public void updateSelectedSystemInfo() {
-        StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
+        GamePanel panel = gameController.getGamePanel();
+        if (panel == null) {
+            return;
+        }
 
+        StarSystem selectedSystem = panel.getSelectedSystem();
         if (selectedSystem != null) {
             selectedSystemLabel.setText("Nome: " + selectedSystem.getName());
             selectedSystemShipsLabel.setText("Navi: " + selectedSystem.getShips());
             selectedSystemProdLabel.setText("Produzione: +" + selectedSystem.getProductionRate());
 
-            // Aggiorna il colore in base al proprietario
             if (selectedSystem.getOwner() != null) {
                 selectedSystemLabel.setForeground(selectedSystem.getOwner().getColor());
             } else {
@@ -170,4 +144,5 @@ public class StatusPanel extends JPanel {
             selectedSystemProdLabel.setText("Produzione: -");
         }
     }
+
 }

@@ -5,12 +5,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Player {
-    private int id;
-    private String name;
-    private Color color;
-    private boolean isAI;
-    private List<StarSystem> ownedSystems;
-    private List<Fleet> fleets;
+    private final int id;
+    private final String name;
+    private final Color color;
+    private final boolean isAI;
+    private final List<StarSystem> ownedSystems;
+    private final List<StarSystem> systemsLost;
+    private final List<Fleet> fleets;
 
     public Player(int id, String name, Color color, boolean isAI) {
         this.id = id;
@@ -19,9 +20,10 @@ public class Player {
         this.isAI = isAI;
         this.ownedSystems = new ArrayList<>();
         this.fleets = new ArrayList<>();
+        this.systemsLost = new ArrayList<>();
+
     }
 
-    // Metodi per gestire i sistemi posseduti
     public void addSystem(StarSystem system) {
         if (!ownedSystems.contains(system)) {
             ownedSystems.add(system);
@@ -36,7 +38,16 @@ public class Player {
         }
     }
 
-    // Metodi per gestire le flotte
+    public List<StarSystem> getSystemsLost() {
+        return systemsLost;
+    }
+
+
+    public void setSystemsLost(StarSystem system) {
+        this.systemsLost.add(system);
+    }
+
+
     public void addFleet(Fleet fleet) {
         fleets.add(fleet);
     }
@@ -45,16 +56,13 @@ public class Player {
         fleets.remove(fleet);
     }
 
-    // Calcola il totale delle navi del giocatore
     public int getTotalShips() {
         int totalShips = 0;
 
-        // Somma le navi in tutti i sistemi posseduti
         for (StarSystem system : ownedSystems) {
             totalShips += system.getShips();
         }
 
-        // Somma le navi in tutte le flotte
         for (Fleet fleet : fleets) {
             totalShips += fleet.getShips();
         }
@@ -62,7 +70,6 @@ public class Player {
         return totalShips;
     }
 
-    // Getters e setters
     public int getId() { return id; }
     public String getName() { return name; }
     public Color getColor() { return color; }

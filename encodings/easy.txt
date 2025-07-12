@@ -1,0 +1,46 @@
+my_system(S) :- system(S), owner(S,P), me(P).
+enemy_system(S):- system(S), owner(S,P), not me(P).
+connected(S,M) :- connected(M,S).
+
+send_expansive_fleet(M,S,MyShips) :-
+    my_system(M),
+    neutral_system(S),
+    connected(M,S),
+    ships(M,MyShips),
+    MyShips > 0.
+
+send_attack_fleet(M,S,MyShips) :-
+    my_system(M),
+    enemy_system(S),
+    connected(M,S),
+    ships(M,MyShips),
+    ships(S,EnemyShips),
+    MyShips > EnemyShips + 20.
+
+send_reinforcement_fleet(M,S,MyShips) :-
+    my_system(M),
+    my_system(S),
+    M != S,
+    connected(M,S),
+    ships(M,MyShips),
+    ships(S,TargetShips),
+    MyShips > TargetShips.
+
+{send_fleet(M,S,Ships): send_attack_fleet(M,S,Ships)}<=1.
+{send_fleet(M,S,Ships): send_expansive_fleet(M,S,Ships)}<=1.
+{send_fleet(M,S,Ships): send_reinforcement_fleet(M,S,Ships)}<=1.
+
+send_fleet_count(C) :- #count{M,S,Ships: send_fleet(M,S,Ships)}=C.
+
+:- send_fleet_count(C), C>1.
+
+% Penalizza non inviare nulla
+:~ send_fleet_count(C), Z = 1 - C. [Z@3]
+
+% Penalizza il rinforzo se puoi espandere
+:~ send_reinforcement_fleet(M,S,Ships), send_fleet(M,S,Ships), send_expansive_fleet(M1,S1,Ships1). [1@2]
+
+% Penalizza il rinforzo se puoi attaccare
+:~ send_reinforcement_fleet(M,S,Ships), send_fleet(M,S,Ships), send_attack_fleet(M1,S1,Ships1). [1@1]
+
+#show send_fleet/3.

@@ -5,171 +5,130 @@ import java.util.List;
 import java.awt.Color;
 import java.awt.Dimension;
 
+
 public class GameState {
-    private GameMap gameMap;
-    private List<Player> players;
-    private Player currentPlayer;
-    private int currentTurn;
+    private final GameMap gameMap;
+    private final List<Player> players;
     private boolean gameOver;
     private Player winner;
+    private static int count=0;
 
     public GameState(Dimension mapSize) {
-        this.gameMap = new GameMap(mapSize);
-        this.players = new ArrayList<>();
-        this.currentTurn = 1;
-        this.gameOver = false;
+        this.gameMap   = new GameMap(mapSize);
+        this.players   = new ArrayList<>();
+        this.gameOver  = false;
+        this.winner    = null;
     }
 
-    // Inizializza una nuova partita
-    public void initGame(int numSystems, int numPlayers, boolean withAI) {
-        // Genera la mappa
-        gameMap.generateRandomMap(numSystems, 100);
+    private void checkGameOver() {
+        List<Player> active = new ArrayList<>();
+        for (Player p : players) {
+            if (!p.getOwnedSystems().isEmpty() || !p.getFleets().isEmpty()) {
+                active.add(p);
+            }
+            if (!p.isAI() && p.getOwnedSystems().isEmpty() && p.getFleets().isEmpty()) {
+                gameOver = true;
+                return;
+            }
+        }
+        if (active.size() == 1) {
+            gameOver = true;
+            winner   = active.get(0);
+        }
+    }
 
-        // Crea i giocatori
+    public void initGame(Difficulty difficulty, int numSystem, boolean withAI) {
+        gameMap.generateMap(numSystem, difficulty);
+        Color[] playerColors;
         players.clear();
-        Color[] playerColors = {Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW};
+        int numPlayers;
+
+        if(difficulty instanceof Difficulty.Easy){
+            numPlayers=2;
+            playerColors= new Color[]{Color.BLUE, Color.RED};
+        }
+        else if(difficulty instanceof Difficulty.Medium){
+            numPlayers=3;
+            playerColors= new Color[]{Color.BLUE, Color.RED, Color.GREEN};
+        }
+        else {
+            numPlayers=4;
+            playerColors= new Color[]{Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW};
+        }
 
         for (int i = 0; i < numPlayers; i++) {
-            boolean isAI = (i > 0 && withAI); // Solo il primo giocatore è umano se withAI è true
+            boolean isAI = (i > 0 && withAI);
             Player player = new Player(i, "Giocatore " + (i + 1), playerColors[i], isAI);
             players.add(player);
         }
 
-        // Assegna sistemi iniziali
-        assignInitialSystems();
+        assignInitialSystems(difficulty);
 
-        // Imposta il primo giocatore
-        currentPlayer = players.get(0);
-        currentTurn = 1;
         gameOver = false;
         winner = null;
     }
 
-    // Assegna i sistemi iniziali ai giocatori
-    private void assignInitialSystems() {
-        List<StarSystem> systems = gameMap.getSystems();
-        int numPlayers = players.size();
-
-        // Calcola quanti sistemi per giocatore (almeno 1)
-        int systemsPerPlayer = Math.max(1, systems.size() / (numPlayers * 3));
-
-        for (int i = 0; i < numPlayers; i++) {
-            Player player = players.get(i);
-
-            // Cerca di prendere sistemi distanti tra loro per ogni giocatore
-            int startIdx = (systems.size() / numPlayers) * i;
-            for (int j = 0; j < systemsPerPlayer; j++) {
-                int idx = (startIdx + j * (systems.size() / (systemsPerPlayer * numPlayers))) % systems.size();
-                StarSystem system = systems.get(idx);
-
-                // Assegna il sistema al giocatore
-                player.addSystem(system);
-
-                // Aggiungi delle navi iniziali
-                system.addShips(10);
-            }
-        }
-    }
-
-    // Passa al prossimo turno
-    public void nextTurn() {
-        // Aggiorna lo stato del gioco
-        updateGameState();
-
-        // Trova il prossimo giocatore
-        int currentIndex = players.indexOf(currentPlayer);
-        currentIndex = (currentIndex + 1) % players.size();
-        currentPlayer = players.get(currentIndex);
-
-        // Se siamo tornati al primo giocatore, incrementa il contatore dei turni
-        if (currentIndex == 0) {
-            currentTurn++;
-        }
-
-        // Se il giocatore corrente è l'IA, esegui il suo turno automaticamente
-        if (currentPlayer.isAI()) {
-            // TODO: Qui chiameremo il modulo dell'IA (DLV2/EmbASP)
-            // Per ora facciamo un comportamento semplice
-            playAITurn();
-        }
-    }
-
-    // Aggiorna lo stato del gioco
-    private void updateGameState() {
-        // Aggiorna le produzioni dei sistemi
-        for (StarSystem system : gameMap.getSystems()) {
-            system.produceShips();
-        }
-
-        // Controlla se c'è un vincitore
-        checkGameOver();
-    }
-
-    // Controlla se il gioco è finito
-    private void checkGameOver() {
-        // Conta quanti giocatori hanno ancora sistemi
-        List<Player> activePlayers = new ArrayList<>();
-
-        for (Player player : players) {
-            if (!player.getOwnedSystems().isEmpty()) {
-                activePlayers.add(player);
-            }
-        }
-
-        // Se resta un solo giocatore attivo, ha vinto
-        if (activePlayers.size() == 1) {
-            gameOver = true;
-            winner = activePlayers.get(0);
-        }
-        // TODO: Aggiungi altre condizioni di vittoria se necessario
-    }
-
-    // Implementazione semplice di un turno IA (temporaneo, sarà sostituito da DLV2/EmbASP)
-    private void playAITurn() {
-        for (StarSystem sourceSystem : currentPlayer.getOwnedSystems()) {
-            // Se il sistema ha abbastanza navi, attacca un sistema vicino
-            if (sourceSystem.getShips() > 10) {
-                for (StarSystem targetSystem : sourceSystem.getConnectedSystems()) {
-                    // Attacca sistemi nemici o neutrali
-                    if (targetSystem.getOwner() != currentPlayer) {
-                        int shipsToSend = sourceSystem.getShips() / 2;
-                        if (shipsToSend > 0) {
-                            sendFleet(sourceSystem, targetSystem, shipsToSend);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Passa al prossimo turno
-        nextTurn();
-    }
-
-    // Invia una flotta da un sistema a un altro
-    public Fleet sendFleet(StarSystem source, StarSystem target, int ships) {
-        if (source.getOwner() == currentPlayer && source.getShips() >= ships) {
-            // Rimuovi le navi dal sistema di origine
-            source.removeShips(ships);
-
-            // Crea una nuova flotta
-            int fleetId = gameMap.getFleets().size();
-            Fleet fleet = new Fleet(fleetId, currentPlayer, ships, source, target, 0.05);
-
-            // Aggiungi la flotta al giocatore e alla mappa
-            currentPlayer.addFleet(fleet);
-            gameMap.addFleet(fleet);
-
-            return fleet;
+    public Player getHumanPlayer() {
+        for (Player p : players) {
+            if (!p.isAI()) return p;
         }
         return null;
     }
 
-    // Getters
-    public GameMap getGameMap() { return gameMap; }
-    public List<Player> getPlayers() { return players; }
-    public Player getCurrentPlayer() { return currentPlayer; }
-    public int getCurrentTurn() { return currentTurn; }
-    public boolean isGameOver() { return gameOver; }
-    public Player getWinner() { return winner; }
+    private void assignInitialSystems(Difficulty difficulty) {
+        List<StarSystem> systems = gameMap.getSystems();
+        int numPlayers = players.size();
+
+        players.get(0).addSystem(systems.get(0));
+        players.get(1).addSystem(systems.get(systems.size() - 1));
+        if (numPlayers > 2) {
+            if(difficulty instanceof Difficulty.Medium){
+                players.get(2).addSystem(systems.get(17));
+            } else {
+                players.get(2).addSystem(systems.get(1));
+            }
+        }
+        if (numPlayers > 3) {
+            players.get(3).addSystem(systems.get(28));
+        }
+    }
+
+    public List<Player> getAiPlayers() {
+        List<Player> ais = new ArrayList<>();
+        for (Player p : players) {
+            if (p.isAI()) ais.add(p);
+        }
+        return ais;
+    }
+
+    public void updateGameState() {
+        if(count%10==0) {
+            for (StarSystem sys : gameMap.getSystems()) {
+                sys.produceShips();
+            }
+        }
+
+        checkGameOver();
+        count++;
+    }
+
+    private int fleetId = 0;
+
+    public Fleet sendFleet(Player who, StarSystem source, StarSystem target, int ships) {
+        if (source.getOwner() == who && source.getShips() >= ships) {
+            source.removeShips(ships);
+            fleetId++;
+            Fleet f = new Fleet(fleetId, who, ships, source, target, 0.02);
+            who.addFleet(f);
+            gameMap.addFleet(f);
+            return f;
+        }
+        return null;
+    }
+
+    public GameMap getGameMap()    { return gameMap; }
+    public List<Player> getPlayers(){ return players; }
+    public boolean isGameOver()    { return gameOver; }
+    public Player getWinner()      { return winner; }
+
 }

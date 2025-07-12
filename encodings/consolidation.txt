@@ -1,0 +1,106 @@
+distance(0..10).
+
+smaller_distance_already_found(S, D) :-
+    dist_from_border(S, D2),
+    distance(D2),
+    distance(D),
+    D2 < D.
+
+dist_from_border(S, 0) :- border_system(S).
+dist_from_border(S, D) :-
+    my_system(S),
+    connected(S, S1),
+    dist_from_border(S1, D1),
+    D = D1 + 1,
+    distance(D),
+    not smaller_distance_already_found(S, D).
+
+% Calcola il percorso ottimale verso il confine per ogni sistema non al confine
+next_step_to_border(From, To) :-
+    my_system(From),
+    my_system(To),
+    connected(From, To),
+    dist_from_border(From, DistFrom),
+    dist_from_border(To, DistTo),
+    DistFrom > DistTo.
+
+has_assignment(From) :- send_fleet(From, _, _).
+
+can_consolidate(From, Total) :-
+    my_system(From),
+    ships(From, Total),
+    not has_assignment(From),
+    Total > 0.
+
+can_send_ships(From, Ships) :-
+    can_consolidate(From, Available),
+    Ships = Available * 3 / 4,
+    Ships > 0.
+
+% Per ogni sistema che puo consolidare si selezionano i possibili destinatari
+potential_consolidation(From, To, Ships) :- next_step_to_border(From, To), can_send_ships(From, Ships).
+
+has_enemy_neighbor(MyBorderSys,EnemySys) :-
+    border_system(MyBorderSys),
+    connected(MyBorderSys, EnemySys),
+    enemy_system(EnemySys, _).
+
+border_danger_level(BorderSys, high) :-
+    has_enemy_neighbor(BorderSys,E1),
+    has_enemy_neighbor(BorderSys,E2),
+    E1 != E2.
+
+border_danger_level(BorderSys, medium) :-
+    has_enemy_neighbor(BorderSys,_),
+    not border_danger_level(BorderSys, high).
+
+border_danger_level(BorderSys, low) :-
+    border_system(BorderSys),
+    not border_danger_level(BorderSys, medium),
+    not border_danger_level(BorderSys, high).
+
+max_actions(3) :- difficulty(medium).
+max_actions(5) :- difficulty(hard).
+
+{consolidation_fleet(From,To,Ships): potential_consolidation(From,To,Ships)} <= M :- max_actions(M).
+
+:- consolidation_fleet(From, To1, _), consolidation_fleet(From, To2, _), To1 != To2.
+
+% Weak Constraints
+:~ max_actions(M), #count{From: consolidation_fleet(From,To,Ships)} = C, Z=M-C, M>C. [Z@3]
+
+:~ potential_consolidation(From1,To1,_),
+    potential_consolidation(From,To2,_),
+    consolidation_fleet(From,To2,_),
+    To1!=To2,
+    border_system(To1),
+    border_system(To2),
+    ships(To1,Ships1),
+    ships(To2,Ships2),
+    Ships1<Ships2,
+    W = Ships2-Ships1. [W*2@2]
+
+:~ potential_consolidation(From1,To1,_),
+    potential_consolidation(From,To2,_),
+    consolidation_fleet(From,To2,_),
+    To1!=To2,
+    not border_system(To1),
+    not border_system(To2),
+    ships(To1,Ships1),
+    ships(To2,Ships2),
+    Ships1<Ships2,
+    W = Ships2-Ships1. [W@2]
+
+:~ border_danger_level(To1, high),
+    potential_consolidation(From,To1,Ships),
+    not consolidation_fleet(From,To1,Ships). [2@1,To1]
+
+:~ border_danger_level(To1, medium),
+    potential_consolidation(From,To1,Ships),
+    not consolidation_fleet(From,To1,Ships). [1@1,To1]
+
+#show potential_consolidation/3.
+#show consolidation_fleet/3.
+#show dist_from_border/2.
+#show next_step_to_border/2.
+#show border_danger_level/2.
