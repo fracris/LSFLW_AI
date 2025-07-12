@@ -24,7 +24,6 @@ public class AIPlayer {
     private String aspStrategy;
 
     private boolean isInitialized;
-    private final PreviousGameMetrics previousMetrics;
 
     private final ExecutorService dlvExecutor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "DLV-" + (player != null ? player.getId() : "unknown"));
@@ -43,22 +42,16 @@ public class AIPlayer {
         this.gameState = gameState;
         this.difficulty = difficulty;
 
-        int enemySystemCount = gameState.getAiPlayers().size();
-        int neutralSystemCount = gameState.getGameMap().getSystems().size() - gameState.getPlayers().size();
-        int myShipsTotal = player.getTotalShips();
-        int enemyShipsTotal = 0;
+
         Map<Integer, int[]> specMetrics = new HashMap<>();
 
         for (Player p : gameState.getPlayers()) {
             if (player.getId() != p.getId()) {
                 System.out.println(p.getId() + " " + p.getName());
                 specMetrics.put(p.getId(), new int[]{p.getOwnedSystems().size(), p.getTotalShips()});
-                enemyShipsTotal += p.getTotalShips();
             }
         }
 
-        enemyShipsTotal -= player.getTotalShips();
-        this.previousMetrics = new PreviousGameMetrics(1, enemySystemCount, neutralSystemCount, myShipsTotal, enemyShipsTotal, specMetrics);
 
         if (!player.isAI()) {
             System.err.println("ATTENZIONE: AIPlayer assegnato a un giocatore non IA");
@@ -68,7 +61,7 @@ public class AIPlayer {
         if (difficulty instanceof Difficulty.Easy) {
             this.aspStrategy = "encodings/easy.txt";
         } else if (difficulty instanceof Difficulty.Medium || difficulty instanceof Difficulty.Hard) {
-            this.aspStrategy = "encodings/choose_strategy.asp";
+            this.aspStrategy = "encodings/medium-hard.txt";
         }
 
         File aspFile = new File(aspStrategy);
@@ -104,10 +97,6 @@ public class AIPlayer {
                     executeAdvancedStrategy();
                 }
 
-                if (difficulty instanceof Difficulty.Medium || difficulty instanceof Difficulty.Hard) {
-                    previousMetrics.updateFromGameState(gameState, player);
-                }
-
                 System.out.println("Turno completato per: " + player.getName());
             } catch (Exception e) {
                 System.err.println("Errore durante il turno IA per " + player.getName() + ": " + e.getMessage());
@@ -118,9 +107,7 @@ public class AIPlayer {
         });
     }
 
-    /**
-     * **NUOVO**: Metodo migliorato per eseguire DLV con gestione processi
-     */
+
     private Output executeDLVWithTimeout(Handler handler) throws Exception {
         activeHandlers.add(handler);
 
@@ -165,9 +152,7 @@ public class AIPlayer {
         }
     }
 
-    /**
-     * **NUOVO**: Cleanup di un handler specifico
-     */
+
     private void cleanupHandler(Handler handler) {
         try {
             if (handler instanceof DesktopHandler) {
@@ -178,9 +163,7 @@ public class AIPlayer {
         }
     }
 
-    /**
-     * **NUOVO**: Termina forzatamente tutti i processi DLV
-     */
+
     private void forceKillDLVProcesses() {
         try {
             if (System.getProperty("os.name").toLowerCase().contains("windows")) {
@@ -205,9 +188,7 @@ public class AIPlayer {
         }
     }
 
-    /**
-     * **NUOVO**: Cleanup forzato per shutdown hook
-     */
+
     private void forceCleanupDLVProcesses() {
         System.out.println("Cleanup forzato DLV per " + player.getName());
 
@@ -329,7 +310,7 @@ public class AIPlayer {
             handler2.addOption(option2);
 
             InputProgram executionProgram = new ASPInputProgram();
-            String consolidamento_strategy = "encodings/consolidamento_strategy.txt";
+            String consolidamento_strategy = "encodings/consolidation.txt";
             executionProgram.addFilesPath(consolidamento_strategy);
             handler2.addProgram(executionProgram);
 
@@ -364,9 +345,7 @@ public class AIPlayer {
         }
     }
 
-    /**
-     * Metodo per fermare l'AIPlayer e liberare le risorse
-     */
+
     public void shutdown() {
         System.out.println("Shutdown AIPlayer per " + player.getName());
 
@@ -404,7 +383,7 @@ public class AIPlayer {
         String[] predicates = {
                 "enemy\\(\\d+\\)",
                 "enemy_system\\(\\d+,\\d+\\)",
-                "undirected_connected\\(\\d+,\\d+\\)",
+                "connected\\(\\d+,\\d+\\)",
                 "border_system\\(\\d+\\)",
                 "my_system\\(\\d+\\)",
                 "ships\\(\\d+,\\d+\\)",
@@ -425,9 +404,9 @@ public class AIPlayer {
     private String convertGameStateToASP(boolean includeMetrics) {
         StringBuilder facts = new StringBuilder();
 
-        facts.append("ai_player(").append(player.getId()).append("). ");
+        facts.append("me(").append(player.getId()).append("). ");
 
-        if (player.getSystemsLost() != null) {
+        if (player.getSystemsLost() != null && includeMetrics) {
             for (StarSystem system : player.getSystemsLost()) {
                 facts.append("system_lost(").append(system.getId()).append("). ");
             }
@@ -445,8 +424,12 @@ public class AIPlayer {
             }
             facts.append("ships(").append(system.getId()).append(",")
                     .append(system.getShips()).append("). ");
-            facts.append("production(").append(system.getId()).append(",")
-                    .append(system.getProductionRate()).append("). ");
+
+            if(includeMetrics)
+            {
+                facts.append("production(").append(system.getId()).append(",")
+                        .append(system.getProductionRate()).append("). ");
+            }
         }
 
         for (StarSystem system : gameState.getGameMap().getSystems()) {
@@ -466,11 +449,6 @@ public class AIPlayer {
                     .append(fleet.getShips()).append(",")
                     .append(fleet.getSource().getId()).append(",")
                     .append(fleet.getDestination().getId()).append("). ");
-        }
-
-        if (includeMetrics) {
-            facts.append("\n% Dati storici per confronto\n");
-            facts.append(previousMetrics.toAspFacts());
         }
 
         return facts.toString();

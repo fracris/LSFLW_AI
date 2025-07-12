@@ -118,7 +118,7 @@ public class MainMenuFrame extends JFrame {
         creditsPanel.setOpaque(false);
         creditsPanel.setLayout(new BoxLayout(creditsPanel, BoxLayout.Y_AXIS));
 
-        JLabel creditsTitle = new JLabel("Credits");
+        JLabel creditsTitle = new JLabel("Riconoscimenti");
         creditsTitle.setFont(new Font("Arial", Font.BOLD, 14));
         creditsTitle.setForeground(new Color(180, 180, 200));
         creditsTitle.setAlignmentX(Component.CENTER_ALIGNMENT);

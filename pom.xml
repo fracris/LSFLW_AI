@@ -32,7 +32,7 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Optionally: parameterized tests support -->
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
@@ -42,7 +42,7 @@
     <dependency>
       <groupId>com.formdev</groupId>
       <artifactId>flatlaf</artifactId>
-      <version>3.0</version>  <!-- o l’ultima versione disponibile -->
+      <version>3.0</version>
     </dependency>
 
 
@@ -52,7 +52,6 @@
       <version>7.1.0</version>
     </dependency>
 
-    <!-- ANTLR4 è necessario per EmbASP -->
     <dependency>
       <groupId>org.antlr</groupId>
       <artifactId>antlr4-runtime</artifactId>

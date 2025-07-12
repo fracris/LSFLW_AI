@@ -98,7 +98,7 @@ public class ControlPanel extends JPanel implements ActionListener {
         StarSystem selectedSystem = gameController.getGamePanel().getSelectedSystem();
         StarSystem targetSystem = gameController.getGamePanel().getTargetSystem();
 
-        if (selectedSystem!=null && targetSystem != null && selectedSystem.getShips() > 1) {  // Modifica: deve avere più di 1 nave
+        if (selectedSystem!=null && targetSystem != null && selectedSystem.getShips() > 1) {
             int ships = calculateShipsToSend(selectedSystem);
             gameController.sendFleet(selectedSystem, targetSystem, ships);
 
@@ -122,7 +122,6 @@ public class ControlPanel extends JPanel implements ActionListener {
         } else {
             shipsToSend = totalShips - 1;
         }
-
         return Math.max(1, Math.min(shipsToSend, totalShips - 1));
     }
 

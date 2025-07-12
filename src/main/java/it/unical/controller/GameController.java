@@ -24,7 +24,7 @@ public class GameController {
     private final Map<Player, AIPlayer> aiPlayers;
     private final int UPDATE_RATE = 10;
     private int tickCounter = 0;
-    private int playerTurn = 0; // Indice per il turno round-robin degli AI
+    private int playerTurn = 0;
     private int sendPerc = 100;
     private final Difficulty difficulty;
     private volatile boolean paused = false;
@@ -38,9 +38,9 @@ public class GameController {
 
 
     private int getAITurnInterval() {
-        int numAIPlayers = gameState.getPlayers().size() - 1; // Escludi il giocatore umano
-        if (numAIPlayers <= 0) return Integer.MAX_VALUE; // Nessun AI
-        return 200 / numAIPlayers; // Come nel codice originale
+        int numAIPlayers = gameState.getPlayers().size() - 1;
+        if (numAIPlayers <= 0) return Integer.MAX_VALUE;
+        return 300 / numAIPlayers;
     }
 
     public GameController(Difficulty difficulty) {
@@ -54,11 +54,9 @@ public class GameController {
     public void showPauseDialog() {
         pauseGame();
 
-        // Creo un JDialog modale legato al gameFrame
         JDialog pauseDialog = new JDialog(gameFrame, "Pausa", Dialog.ModalityType.APPLICATION_MODAL);
         pauseDialog.setUndecorated(true);
 
-        // Pannello con messaggio
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(new Color(30, 30, 60));
         content.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -403,7 +401,7 @@ public class GameController {
                                 source.getId() + " a sistema " + target.getId());
                     }
                 } catch (Exception e) {
-                    if (!isShuttingDown) { // Non loggare errori durante shutdown
+                    if (!isShuttingDown) {
                         System.err.println("Errore durante l'invio della flotta: " + e.getMessage());
                         e.printStackTrace();
                     }

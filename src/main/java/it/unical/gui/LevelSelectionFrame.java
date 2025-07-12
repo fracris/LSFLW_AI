@@ -42,25 +42,25 @@ public class LevelSelectionFrame extends JFrame {
         panel.add(Box.createVerticalStrut(40));
 
         panel.add(createLevelPanel("Facile", Difficulty.easy(), new String[]{
-                "• Una sola strategia di gioco disponibile",
-                "• Nessun consolidamento delle truppe",
-                "• Possibilità di inviare un'azione alla volta"
+                "• Strategie disponibili: Attacco, Rinforzo o Espansione ",
+                "• Solo un invio di flotta",
+                "• Nessun consolidamento delle flotte",
         }));
 
         panel.add(Box.createVerticalStrut(20));
 
         panel.add(createLevelPanel("Medio", Difficulty.medium(), new String[]{
-                "• Strategie disponibili: Attacco diretto, Cooperazione, Difesa o Espansione",
+                "• Strategie disponibili: Attacco diretto, Cooperazione, Difesa, Espansione, Rinforzo",
                 "• Una strategia attiva per ogni decisione",
-                "• Rafforzamento dei confini disponibile con un massimo di 3 invii"
+                "• Consolidamento dei confini disponibile con un massimo di 3 invii"
         }));
 
         panel.add(Box.createVerticalStrut(20));
 
         panel.add(createLevelPanel("Difficile", Difficulty.hard(), new String[]{
+                "• Strategie disponibili: Attacco diretto, Cooperazione, Difesa, Espansione, Rinforzo",
                 "• Due strategie selezionabili per ogni decisione",
-                "• Rafforzamento dei confini con un massimo di 5 invii",
-                "• Necessaria rapidità nelle decisioni"
+                "• Consolidamento dei confini con un massimo di 5 invii",
         }));
 
 

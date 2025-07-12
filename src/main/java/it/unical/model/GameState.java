@@ -68,7 +68,6 @@ public class GameState {
         winner = null;
     }
 
-    /** Restituisce il giocatore umano (assumiamo sia sempre il primo in lista) */
     public Player getHumanPlayer() {
         for (Player p : players) {
             if (!p.isAI()) return p;

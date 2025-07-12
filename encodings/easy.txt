@@ -1,59 +1,46 @@
-my_system(S) :- system(S), owner(S,P), ai_player(P).
+my_system(S) :- system(S), owner(S,P), me(P).
+enemy_system(S):- system(S), owner(S,P), not me(P).
+connected(S,M) :- connected(M,S).
 
-enemy_system(S):- system(S), owner(S,P), not ai_player(P), not neutral_system(S).
-
-undirected_connected(M,S) :- connected(M,S).
-undirected_connected(M,S) :- connected(S,M).
-
-% 1) Attacca neutrali adiacenti
 send_expansive_fleet(M,S,MyShips) :-
     my_system(M),
     neutral_system(S),
-    undirected_connected(M,S),
+    connected(M,S),
     ships(M,MyShips),
-    MyShips > 15.
+    MyShips > 0.
 
-% 2) Attacca nemici adiacenti con superiorità numerica
 send_attack_fleet(M,S,MyShips) :-
     my_system(M),
     enemy_system(S),
-    undirected_connected(M,S),
+    connected(M,S),
     ships(M,MyShips),
     ships(S,EnemyShips),
-    MyShips > EnemyShips + 10.
+    MyShips > EnemyShips + 20.
+
+send_reinforcement_fleet(M,S,MyShips) :-
+    my_system(M),
+    my_system(S),
+    M != S,
+    connected(M,S),
+    ships(M,MyShips),
+    ships(S,TargetShips),
+    MyShips > TargetShips.
 
 {send_fleet(M,S,Ships): send_attack_fleet(M,S,Ships)}<=1.
 {send_fleet(M,S,Ships): send_expansive_fleet(M,S,Ships)}<=1.
+{send_fleet(M,S,Ships): send_reinforcement_fleet(M,S,Ships)}<=1.
 
-:~ #count{M,S: send_fleet(M,S,Ships)}=C, Z = 1 - C . [Z@4]
+send_fleet_count(C) :- #count{M,S,Ships: send_fleet(M,S,Ships)}=C.
 
-% Weak Constraint 1: Penalizza il rinforzo di sistemi deboli
-:~ send_fleet(M,S,Ships),
-   my_system(M),
-   my_system(S),
-   M != S,
-   undirected_connected(M,S),
-   ships(M,MyShips),
-   ships(S,TargetShips),
-   MyShips > 20,
-   TargetShips < 10,
-   Ships = MyShips / 2. [3@1]
+:- send_fleet_count(C), C>1.
 
-% Weak Constraint 2: Penalizza l'attacco a nemici con superiorità numerica
-:~ send_fleet(M,S,MyShips),
-   my_system(M),
-   enemy_system(S),
-   undirected_connected(M,S),
-   ships(M,MyShips),
-   ships(S,EnemyShips),
-   MyShips > EnemyShips + 10. [2@2]
+% Penalizza non inviare nulla
+:~ send_fleet_count(C), Z = 1 - C. [Z@3]
 
-% Weak Constraint 3: Penalizza l'attacco a sistemi neutrali
-:~ send_fleet(M,S,MyShips),
-   my_system(M),
-   neutral_system(S),
-   undirected_connected(M,S),
-   ships(M,MyShips),
-   MyShips > 15. [1@3]
+% Penalizza il rinforzo se puoi espandere
+:~ send_reinforcement_fleet(M,S,Ships), send_fleet(M,S,Ships), send_expansive_fleet(M1,S1,Ships1). [1@2]
+
+% Penalizza il rinforzo se puoi attaccare
+:~ send_reinforcement_fleet(M,S,Ships), send_fleet(M,S,Ships), send_attack_fleet(M1,S1,Ships1). [1@1]
 
 #show send_fleet/3.
