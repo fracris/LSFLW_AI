@@ -14,6 +14,15 @@
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
+
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -45,11 +54,12 @@
       <version>3.0</version>
     </dependency>
 
+    
 
     <dependency>
-      <groupId>it.unical.mat</groupId>
-      <artifactId>embasp</artifactId>
-      <version>7.1.0</version>
+      <groupId>com.github.DeMaCS-UNICAL</groupId>
+      <artifactId>EmbASP-Java</artifactId>
+      <version>v7.1.0</version>
     </dependency>
 
     <dependency>
