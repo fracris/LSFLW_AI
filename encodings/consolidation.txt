@@ -67,7 +67,7 @@ max_actions(5) :- difficulty(hard).
 :- consolidation_fleet(From, To1, _), consolidation_fleet(From, To2, _), To1 != To2.
 
 % Weak Constraints
-:~ max_actions(M), #count{From: consolidation_fleet(From,To,Ships)} = C, Z=M-C, M>C. [Z@3]
+:~ max_actions(M), #count{From: consolidation_fleet(From,To,Ships)} = C, Z=M-C, Z>0. [Z@3]
 
 :~ potential_consolidation(From1,To1,_),
     potential_consolidation(From,To2,_),

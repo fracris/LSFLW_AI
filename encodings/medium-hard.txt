@@ -208,7 +208,7 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 
 % Weak Constraints
 
-:~ num_strategy(N,D), difficulty(D), #count{S : chosen_strategy(S)} = C, Z=N-C, Z>0. [Z@8]
+:~ num_strategy(N,D), difficulty(D), #count{ S : chosen_strategy(S)} = C, Z=N-C, Z>0. [Z@8]
 
 :~ applicable_strategy(defensive), not chosen_strategy(defensive). [1@7]
 
@@ -218,10 +218,11 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
     applicable_strategy(reinforce),
     chosen_strategy(reinforce),
     not chosen_strategy(direct_attack). [1@5]
+
 :~ applicable_strategy(cooperative_attack),
     applicable_strategy(reinforce),
     chosen_strategy(reinforce),
-    not chosen_strategy(cooperative_attack). [1@5]
+    not chosen_strategy(cooperative_attack). [2@5]
 
 :~ applicable_strategy(direct_attack),
    applicable_strategy(cooperative_attack),

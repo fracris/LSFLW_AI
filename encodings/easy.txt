@@ -34,8 +34,8 @@ send_fleet_count(C) :- #count{M,S,Ships: send_fleet(M,S,Ships)}=C.
 
 :- send_fleet_count(C), C>1.
 
-% Penalizza il non inviare nulla
-:~ send_fleet_count(C), Z = 1 - C, Z>0. [Z@3]
+% Penalizza non inviare nulla
+:~ send_fleet_count(C), Z = 1 - C, Z > 0. [Z@3]
 
 % Penalizza il rinforzo se puoi espandere
 :~ send_reinforcement_fleet(M,S,Ships), send_fleet(M,S,Ships), send_expansive_fleet(M1,S1,Ships1). [1@2]
