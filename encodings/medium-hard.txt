@@ -27,8 +27,6 @@ enemy_system_ship(SystemId, TotalShips) :-
     incoming_ships(SystemId, IncomingShips),
     TotalShips = Ships + IncomingShips.
 
-enemy_production_total(P, T) :- enemy(P), #sum{Production, S : enemy_system(S, P), production(S, Production)} = T.
-
 border_enemy_system_stronger(My,Enemy) :-
     border_to_enemy(My, Enemy),
     enemy_system_ship(Enemy,EnemyShips),
@@ -47,17 +45,11 @@ cooperative_target(Enemy_S, P) :-
 
 candidate_my_system_helper(S) :- my_system(S), not has_enemy_border(S).
 
-expansion_conditions :- border_to_neutral(S).
-defensive_conditions :- systems_lost.
-reinforce_conditions :-  border_enemy_system_stronger(_,_).
-direct_attack_conditions:- border_to_enemy(S,P).
-cooperative_attack_conditions :- cooperative_target(_,_).
-
-applicable_strategy(expansion) :- expansion_conditions.
-applicable_strategy(defensive) :- defensive_conditions.
-applicable_strategy(reinforce) :- reinforce_conditions.
-applicable_strategy(direct_attack) :- direct_attack_conditions.
-applicable_strategy(cooperative_attack) :- cooperative_attack_conditions.
+applicable_strategy(expansion) :- border_to_neutral(S).
+applicable_strategy(defensive) :- systems_lost.
+applicable_strategy(reinforce) :-  border_enemy_system_stronger(_,_).
+applicable_strategy(direct_attack) :- border_to_enemy(S,P).
+applicable_strategy(cooperative_attack) :- cooperative_target(_,_).
 
 num_strategy(1,medium).
 num_strategy(2,hard).
@@ -251,17 +243,6 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 
 :~ send_expansion_fleet(From,To,Ships), send_fleet(From,To,Ships), production(To,P), Z=5-P. [Z@1,From,To]
 
-% Per il consolidamento
-#show enemy/1.
-#show enemy_system/2.
-#show connected/2.
-#show border_system/1.
-#show my_system/1.
-#show ships/2.
-#show difficulty/1.
-#show send_fleet/3.
-
-#show direct_attack_conditions/0.
 #show direct_attack/3.
 #show candidate_my_system_helper/1.
 #show incoming_ships/2.
@@ -278,3 +259,13 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 #show attack_ships/3.
 #show cooperative_ships/3.
 #show defensive_ships/3.
+
+% Per il consolidamento
+#show enemy/1.
+#show enemy_system/2.
+#show connected/2.
+#show border_system/1.
+#show my_system/1.
+#show ships/2.
+#show difficulty/1.
+#show send_fleet/3.

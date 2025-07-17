@@ -209,10 +209,11 @@ public class AIPlayer {
     private void executeEasyStrategy() throws Exception {
         String aspFacts = convertGameStateToASP(false);
 
-
         Handler handler = null;
         try {
             handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
+            OptionDescriptor option = new OptionDescriptor(" --printonlyoptimum");
+            handler.addOption(option);
             InputProgram strategyProgram = new ASPInputProgram();
             strategyProgram.addFilesPath(aspStrategy);
             handler.addProgram(strategyProgram);
@@ -482,7 +483,6 @@ public class AIPlayer {
     }
 
     private void executeActionsFromStrings(List<String> actions) {
-
 
         boolean executedAny = false;
         for (String atomStr : actions) {
