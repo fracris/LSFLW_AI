@@ -47,7 +47,7 @@ candidate_my_system_helper(S) :- my_system(S), not has_enemy_border(S).
 
 applicable_strategy(expansion) :- border_to_neutral(S).
 applicable_strategy(defensive) :- systems_lost.
-applicable_strategy(reinforce) :-  border_enemy_system_stronger(_,_).
+applicable_strategy(reinforce) :- border_enemy_system_stronger(_,_).
 applicable_strategy(direct_attack) :- border_to_enemy(S,P).
 applicable_strategy(cooperative_attack) :- cooperative_target(_,_).
 
@@ -243,6 +243,7 @@ send_fleet(From,To,Ships) :- send_reinforce_fleet(From,To,Ships).
 
 :~ send_expansion_fleet(From,To,Ships), send_fleet(From,To,Ships), production(To,P), Z=5-P. [Z@1,From,To]
 
+#show direct_attack_conditions/0.
 #show direct_attack/3.
 #show candidate_my_system_helper/1.
 #show incoming_ships/2.

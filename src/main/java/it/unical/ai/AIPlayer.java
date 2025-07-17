@@ -78,12 +78,12 @@ public class AIPlayer {
 
     public void performTurn() {
         if (!isInitialized) {
-            System.err.println("AIPlayer non inizializzato, impossibile eseguire il turno");
+            System.err.println("AIPlayer non inizializzato");
             return;
         }
 
         if (!isExecuting.compareAndSet(false, true)) {
-            System.out.println("AIPlayer " + player.getName() + " ancora in esecuzione, salto questo turno");
+            System.out.println("AIPlayer " + player.getName() + " ancora in esecuzione");
             return;
         }
 
@@ -209,11 +209,13 @@ public class AIPlayer {
     private void executeEasyStrategy() throws Exception {
         String aspFacts = convertGameStateToASP(false);
 
+
         Handler handler = null;
         try {
             handler = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
             OptionDescriptor option = new OptionDescriptor(" --printonlyoptimum");
             handler.addOption(option);
+
             InputProgram strategyProgram = new ASPInputProgram();
             strategyProgram.addFilesPath(aspStrategy);
             handler.addProgram(strategyProgram);
@@ -347,28 +349,6 @@ public class AIPlayer {
     }
 
 
-    public void shutdown() {
-        System.out.println("Shutdown AIPlayer per " + player.getName());
-
-        forceCleanupDLVProcesses();
-
-        dlvExecutor.shutdownNow();
-        try {
-            if (!dlvExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
-                System.err.println("Timeout nella chiusura dell'executor per " + player.getName());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        System.out.println("Shutdown completato per " + player.getName());
-    }
-
-    public boolean isExecuting() {
-        return isExecuting.get();
-    }
-
-
     private List<String> extractChosenStrategies(String dlvOutput) {
         List<String> strategies = new ArrayList<>();
         Pattern p = Pattern.compile("chosen_strategy\\([^)]*\\)");
@@ -482,7 +462,31 @@ public class AIPlayer {
         return actions;
     }
 
+
+
+    public void shutdown() {
+        System.out.println("Shutdown AIPlayer per " + player.getName());
+
+        forceCleanupDLVProcesses();
+
+        dlvExecutor.shutdownNow();
+        try {
+            if (!dlvExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                System.err.println("Timeout nella chiusura dell'executor per " + player.getName());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("Shutdown completato per " + player.getName());
+    }
+
+    public boolean isExecuting() {
+        return isExecuting.get();
+    }
+
     private void executeActionsFromStrings(List<String> actions) {
+
 
         boolean executedAny = false;
         for (String atomStr : actions) {
