@@ -59,9 +59,9 @@ public class AIPlayer {
         }
 
         if (difficulty instanceof Difficulty.Easy) {
-            this.aspStrategy = "encodings/easy.txt";
+            this.aspStrategy = "encodings/easy.lp";
         } else if (difficulty instanceof Difficulty.Medium || difficulty instanceof Difficulty.Hard) {
-            this.aspStrategy = "encodings/medium-hard.txt";
+            this.aspStrategy = "encodings/medium-hard.lp";
         }
 
         File aspFile = new File(aspStrategy);
@@ -306,14 +306,12 @@ public class AIPlayer {
                 aspFacts2.append(sendfleet).append(".\n");
             }
 
-
-
             handler2 = new DesktopHandler(new DLV2DesktopService("lib/dlv.exe"));
             OptionDescriptor option2 = new OptionDescriptor(" --printonlyoptimum");
             handler2.addOption(option2);
 
             InputProgram executionProgram = new ASPInputProgram();
-            String consolidamento_strategy = "encodings/consolidation.txt";
+            String consolidamento_strategy = "encodings/consolidation.lp";
             executionProgram.addFilesPath(consolidamento_strategy);
             handler2.addProgram(executionProgram);
 
