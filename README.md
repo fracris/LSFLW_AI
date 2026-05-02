@@ -1,16 +1,18 @@
 # 🌟 LittleStars-AI
 
-Un progetto Java che integra [EmbASP](https://github.com/DeMaCS-UNICAL/EmbASP-Java) per la programmazione dichiarativa (Answer Set Programming) tramite interfacce grafiche e engine logici.
+A Java project inspired by *Little Stars for Little Wars* that integrates [EmbASP](https://github.com/DeMaCS-UNICAL/EmbASP-Java) to use **Answer Set Programming (ASP)** through graphical interfaces and logical reasoning engines.
 
-## 📦 Dipendenze
+The project features three difficulty levels where the player faces an ASP-based AI opponent. As the difficulty increases, the AI becomes stronger and gains more advanced abilities.
 
-Il progetto utilizza **Maven** per la gestione delle dipendenze. Una delle librerie principali è **EmbASP**, che non è disponibile su Maven Central ma può essere importata tramite [JitPack](https://jitpack.io).
+## 📦 Dependencies
+
+The project uses **Maven** to manage dependencies. One of the main libraries is **EmbASP**, which is not available on Maven Central but can be imported through [JitPack](https://jitpack.io).
 
 ---
 
-## ✅ Metodo consigliato: Dipendenza tramite JitPack
+## ✅ Recommended Method: Dependency via JitPack
 
-Assicurati che nel tuo `pom.xml` sia presente:
+Make sure your `pom.xml` contains:
 
 ```xml
 <repositories>
@@ -21,43 +23,46 @@ Assicurati che nel tuo `pom.xml` sia presente:
 </repositories>
 
 <dependency>
-      <groupId>com.github.DeMaCS-UNICAL</groupId>
-      <artifactId>EmbASP-Java</artifactId>
-      <version>v7.1.0</version>
+  <groupId>com.github.DeMaCS-UNICAL</groupId>
+  <artifactId>EmbASP-Java</artifactId>
+  <version>v7.1.0</version>
 </dependency>
 ```
 
-Poi esegui:
+Then run:
 
 ```bash
 mvn clean install -U
 ```
 
-> ℹ️ Nota: la versione **deve essere `v7.1.0`** (con la `v`) perché è il nome esatto del tag rilasciato nel repository GitHub.
+> ℹ️ Note: the version **must be `v7.1.0`** with the `v`, because it matches the exact release tag on the GitHub repository.
 
 ---
 
-## ❌ Se JitPack non funziona (metodo alternativo manuale)
+## ❌ If JitPack Does Not Work: Manual Alternative
 
-Se Maven non riesce a scaricare la dipendenza da JitPack (es. per problemi di build del repo o mancanza di accesso), puoi procedere in modo manuale.
+If Maven cannot download the dependency from JitPack, for example because of repository build issues or access problems, you can install the library manually.
 
-### 1. Scarica il file `embasp-7.1.0.jar`
+### 1. Download the `embasp-7.1.0.jar` file
 
-Scaricalo dalla sezione *Releases* del repository:
+Download it from the *Releases* section of the repository:  
 🔗 https://github.com/DeMaCS-UNICAL/EmbASP-Java/releases/tag/v7.1.0
 
-### 2. Inseriscilo nella cartella `libs/` del progetto (creala se non esiste)
+### 2. Place it inside the `libs/` folder of the project
 
-Esempio:
-```
+Create the folder if it does not already exist.
+
+Example:
+
+```text
 LittleStars-AI/
 ├── libs/
 │   └── embasp-7.1.0.jar
 ```
 
-### 3. Installa la libreria nel tuo repository Maven locale
+### 3. Install the library into your local Maven repository
 
-Esegui il seguente comando:
+Run the following command:
 
 ```bash
 mvn install:install-file \
@@ -68,7 +73,7 @@ mvn install:install-file \
   -Dpackaging=jar
 ```
 
-### 4. Modifica il `pom.xml` per usare la versione installata localmente:
+### 4. Update the `pom.xml` to use the locally installed version
 
 ```xml
 <dependency>
@@ -80,10 +85,9 @@ mvn install:install-file \
 
 ---
 
-## 📌 Note finali
+## 📌 Final Notes
 
-- Questo approccio manuale **funziona solo localmente**, quindi ogni sviluppatore dovrà eseguire lo stesso comando se clona il progetto.
-- In alternativa, puoi usare direttamente il file `.jar` con `systemPath`, ma è **sconsigliato**.
+- This manual approach **works only locally**, so every developer who clones the project must run the same command.
+- Alternatively, you can use the `.jar` file directly with `systemPath`, but this approach is **not recommended**.
 
 ---
-
